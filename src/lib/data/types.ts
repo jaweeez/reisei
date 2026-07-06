@@ -7,6 +7,8 @@ export interface Me {
   username: string;
   tz: string;
   plan: 'free' | 'pro';
+  /** Local HH:MM the coach's "post" nudge fires. */
+  holdTime?: string;
 }
 
 export type Tier = 'free' | 'pro' | 'team';
@@ -40,14 +42,21 @@ export interface StreakView {
   integrity: number;
 }
 
+export type AckKind = 'seen' | 'respect' | 'stand_up';
+export type Posture = 'held' | 'broke' | 'dark';
+
 export interface CrewMemberView {
   id: string;
   name: string;
   role: 'member' | 'captain';
   /** Today's posture: 'held' | 'broke' | 'dark' (logged nothing yet). */
-  posture: 'held' | 'broke' | 'dark';
+  posture: Posture;
   /** The crewmate's line statement, if they have an active one (the witness). */
   line: string | null;
+  /** Acks this member received today (from anyone). */
+  acksReceived: number;
+  /** Whether the viewer has already acked this member today (any kind). */
+  ackedByMe: boolean;
 }
 
 export interface CrewView {
@@ -68,4 +77,6 @@ export interface HomeState {
   todayVerdict: Verdict | null;
   streak: StreakView;
   crews: CrewView[];
+  /** The coach's nudge for today (in-app banner), or null. */
+  todayNudge: string | null;
 }

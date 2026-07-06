@@ -99,6 +99,13 @@ export default function Today() {
 
   return (
     <Screen>
+      {state?.todayNudge && (
+        <View style={styles.banner}>
+          <Mono color={color.actionText}>Coach</Mono>
+          <Body color={color.textPrimary}>{state.todayNudge}</Body>
+        </View>
+      )}
+
       <Card>
         <Eyebrow>Your line</Eyebrow>
         <Display>{line?.statement ?? ''}</Display>
@@ -174,6 +181,7 @@ function confirmBreak(): Promise<boolean> {
 
 const styles = StyleSheet.create({
   head: { alignItems: 'center', marginTop: space.section },
+  banner: { gap: space.xs, padding: space.lg, borderRadius: radius.md, borderLeftWidth: 3, borderLeftColor: color.action, backgroundColor: color.actionSoft },
   mark: { alignItems: 'center', paddingVertical: space.md },
   crewHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   input: {

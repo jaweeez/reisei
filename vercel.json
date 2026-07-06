@@ -8,5 +8,6 @@
       "includeFiles": "dist/server/**"
     }
   },
-  "rewrites": [{ "source": "/(.*)", "destination": "/api/index" }]
+  "rewrites": [{ "source": "/(.*)", "destination": "/api/index" }],
+  "crons": [{ "path": "/api/coach/tick", "schedule": "0 * * * *" }]
 }

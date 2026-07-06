@@ -1,5 +1,5 @@
 import { api } from '@/lib/api';
-import type { HomeState, LineKind, LineView, StreakView, Verdict } from '@/lib/data/types';
+import type { AckKind, HomeState, LineKind, LineView, StreakView, Verdict } from '@/lib/data/types';
 
 // The Today + Crew + Lines data client. Same base resolution + auth as the other clients.
 
@@ -52,4 +52,16 @@ export async function joinCrew(code: string): Promise<{ crewId?: string; error?:
 export async function createInvite(crewId: string): Promise<{ code?: string; error?: string }> {
   const res = await api<{ code?: string; error?: string }>('/api/crew/invite', { method: 'POST', body: JSON.stringify({ crewId }) });
   return res.data;
+}
+
+/** One-tap crew ack: SEEN (held) / RESPECT (broke) / STAND UP (dark). */
+export async function ackMember(crewId: string, toUserId: string, kind: AckKind): Promise<boolean> {
+  const res = await api<{ ok?: boolean }>('/api/crew/ack', { method: 'POST', body: JSON.stringify({ crewId, toUserId, kind }) });
+  return res.ok;
+}
+
+/** Set the local HH:MM the coach's evening "post" nudge fires. */
+export async function setHoldTime(holdTime: string): Promise<boolean> {
+  const res = await api('/api/prefs', { method: 'POST', body: JSON.stringify({ holdTime }) });
+  return res.ok;
 }
