@@ -66,7 +66,7 @@ export default function Crew() {
         <Card key={crew.id}>
           <View style={styles.crewHead}>
             <Body color={color.textPrimary}>{crew.name}</Body>
-            <Mono>{`CREW ${crew.checkedInCount}/${crew.memberCount}`}</Mono>
+            <Mono>{`HELD ${crew.heldCount}/${crew.memberCount}${crew.brokeCount ? ` · ${crew.brokeCount} BROKE` : ''}`}</Mono>
           </View>
           <CrewDots members={crew.members} />
           {crew.isCaptain && <Button label="Invite to crew" variant="secondary" onPress={() => onInvite(crew.id)} />}

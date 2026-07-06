@@ -1,7 +1,7 @@
 import { api } from '@/lib/api';
-import type { HomeState, StreakView } from '@/lib/data/types';
+import type { HomeState, LineKind, LineView, StreakView, Verdict } from '@/lib/data/types';
 
-// The Today + Crew data client. Same base resolution + auth as the other clients.
+// The Today + Crew + Lines data client. Same base resolution + auth as the other clients.
 
 export async function fetchState(): Promise<HomeState | null> {
   const res = await api<HomeState>('/api/state');
@@ -10,15 +10,32 @@ export async function fetchState(): Promise<HomeState | null> {
 
 export interface CheckInResult {
   alreadyCheckedIn: boolean;
+  todayVerdict: Verdict | null;
   localDate: string;
   streak: StreakView;
 }
 
-export async function checkIn(note?: string, crewId?: string): Promise<CheckInResult | null> {
-  const res = await api<CheckInResult>('/api/checkin', { method: 'POST', body: JSON.stringify({ note, crewId }) });
+/** Log today's verdict against the active line. `held` advances the streak; `broke`
+ *  is an honest break (zeroes the hold streak, keeps integrity). */
+export async function checkIn(verdict: Verdict = 'held', note?: string): Promise<CheckInResult | null> {
+  const res = await api<CheckInResult>('/api/checkin', { method: 'POST', body: JSON.stringify({ verdict, note }) });
   return res.ok ? res.data : null;
 }
 
+export async function createLine(statement: string, kind: LineKind = 'abstain'): Promise<{ line?: LineView; error?: string }> {
+  const res = await api<{ line?: LineView; error?: string }>('/api/lines', {
+    method: 'POST',
+    body: JSON.stringify({ statement, kind }),
+  });
+  return res.data;
+}
+
+export async function retireLine(id: string): Promise<boolean> {
+  const res = await api(`/api/lines?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+  return res.ok;
+}
+
+// --- Crew ---
 export async function createCrew(name: string): Promise<{ id?: string; error?: string; upsell?: boolean }> {
   const res = await api<{ id?: string; error?: string; upsell?: boolean }>('/api/crew', {
     method: 'POST',
@@ -28,17 +45,11 @@ export async function createCrew(name: string): Promise<{ id?: string; error?: s
 }
 
 export async function joinCrew(code: string): Promise<{ crewId?: string; error?: string }> {
-  const res = await api<{ crewId?: string; error?: string }>('/api/crew/join', {
-    method: 'POST',
-    body: JSON.stringify({ code }),
-  });
+  const res = await api<{ crewId?: string; error?: string }>('/api/crew/join', { method: 'POST', body: JSON.stringify({ code }) });
   return res.data;
 }
 
 export async function createInvite(crewId: string): Promise<{ code?: string; error?: string }> {
-  const res = await api<{ code?: string; error?: string }>('/api/crew/invite', {
-    method: 'POST',
-    body: JSON.stringify({ crewId }),
-  });
+  const res = await api<{ code?: string; error?: string }>('/api/crew/invite', { method: 'POST', body: JSON.stringify({ crewId }) });
   return res.data;
 }

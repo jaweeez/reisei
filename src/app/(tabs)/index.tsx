@@ -1,92 +1,201 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Alert, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Body, Button, Caption, Card, Display, Eyebrow, Mono, Screen, Title } from '@/components';
-import { useAuth } from '@/lib/auth/AuthProvider';
-import { checkIn, fetchState } from '@/lib/data/client';
-import type { HomeState } from '@/lib/data/types';
-import { color, space } from '@/theme';
+import { Body, Button, Caption, Card, CrewDots, Display, Eyebrow, Mono, Screen, Text, Title, VialMark } from '@/components';
+import { checkIn, createLine, fetchState } from '@/lib/data/client';
+import type { HomeState, LineKind } from '@/lib/data/types';
+import { color, radius, space } from '@/theme';
 
 export default function Today() {
-  const { user } = useAuth();
   const [state, setState] = useState<HomeState | null>(null);
   const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState('');
+  // draw-a-line form
+  const [statement, setStatement] = useState('');
+  const [kind, setKind] = useState<LineKind>('abstain');
+  const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setState(await fetchState());
-  }, []);
-
+  const load = useCallback(async () => setState(await fetchState()), []);
   useFocusEffect(
     useCallback(() => {
       void load();
     }, [load]),
   );
 
-  async function onCheckIn() {
+  async function onDraw() {
+    if (statement.trim().length < 2) return;
     setBusy(true);
-    const res = await checkIn();
+    setError(null);
+    const res = await createLine(statement.trim(), kind);
+    setBusy(false);
+    if (res.line) {
+      setStatement('');
+      await load();
+    } else {
+      setError(res.error ?? 'Could not draw the line.');
+    }
+  }
+
+  async function onLog(verdict: 'held' | 'broke') {
+    if (verdict === 'broke') {
+      const ok = await confirmBreak();
+      if (!ok) return;
+    }
+    setBusy(true);
+    const res = await checkIn(verdict, note.trim() || undefined);
     setBusy(false);
     if (res) {
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      void Haptics.notificationAsync(
+        verdict === 'held' ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Warning,
+      );
+      setNote('');
       await load();
     }
   }
 
-  const streak = state?.streak.current ?? 0;
-  const checkedIn = state?.checkedInToday ?? false;
-  const message = checkedIn
-    ? streak > 1
-      ? `Logged. ${streak}-day streak.`
-      : 'Logged. Day 1 on the board.'
-    : streak > 0
-      ? `${streak}-day streak. Keep it going.`
-      : 'Day 1 starts when you log.';
+  // ── Empty state: draw your line ──
+  if (state && !state.line) {
+    return (
+      <Screen>
+        <View style={styles.head}>
+          <VialMark width={150} />
+          <Title style={{ marginTop: space.lg }}>Draw your line</Title>
+        </View>
+        <Card>
+          <Caption>One standard you hold under pressure. Breaking honestly beats going dark — report it, the crew respects the report.</Caption>
+          <TextInput
+            placeholder='e.g. "In bed by 23:00" · "No drinking"'
+            placeholderTextColor={color.textSecondary}
+            value={statement}
+            onChangeText={setStatement}
+            maxLength={80}
+            style={styles.input}
+          />
+          <View style={styles.kindRow}>
+            <KindChip label="A line I won't cross" active={kind === 'abstain'} onPress={() => setKind('abstain')} />
+            <KindChip label="A bar I'll hold" active={kind === 'hold'} onPress={() => setKind('hold')} />
+          </View>
+          {error && <Body color={color.actionText}>{error}</Body>}
+          <Button label="Draw the line" onPress={onDraw} loading={busy} disabled={statement.trim().length < 2} />
+        </Card>
+      </Screen>
+    );
+  }
+
+  const line = state?.line;
+  const s = state?.streak;
+  const verdict = state?.todayVerdict ?? null;
+  const message =
+    verdict === 'held'
+      ? 'Held. The line holds.'
+      : verdict === 'broke'
+        ? 'Broke. Logged honestly — integrity stands.'
+        : s && s.current > 0
+          ? `${s.current}-day hold. Keep it standing.`
+          : s && s.lastVerdict === 'broke'
+            ? 'Line broke last. Today it holds or it doesn’t. Log.'
+            : 'The line holds when you log it.';
 
   return (
     <Screen>
-      <View style={styles.header}>
-        <Title>{greeting()}{user?.name ? `, ${user.name.split(' ')[0]}` : ''}</Title>
-      </View>
-
       <Card>
-        <Eyebrow>Streak</Eyebrow>
-        <Display>{streak > 0 ? `Day ${streak}` : 'Day 0'}</Display>
-        <Body>{message}</Body>
-        <Button label={checkedIn ? 'Logged today' : 'Log today'} onPress={onCheckIn} loading={busy} disabled={checkedIn} />
-        {state && (
+        <Eyebrow>Your line</Eyebrow>
+        <Display>{line?.statement ?? ''}</Display>
+        {s && (
           <Mono>
-            {`LONGEST ${String(state.streak.longest).padStart(2, '0')} · ${checkedIn ? 'LOGGED TODAY' : 'NOT LOGGED'}`}
+            {`STREAK ${String(s.current).padStart(2, '0')} · LONGEST ${String(s.longest).padStart(2, '0')} · BROKE ${String(
+              s.breaks,
+            ).padStart(2, '0')} · INTEGRITY ${String(s.integrity).padStart(2, '0')}`}
           </Mono>
+        )}
+
+        <View style={styles.mark}>
+          <VialMark width={200} off={verdict === 'broke' ? 42 : 0} />
+        </View>
+
+        <Body>{message}</Body>
+
+        {verdict === null ? (
+          <>
+            <TextInput
+              placeholder="Field report (optional)"
+              placeholderTextColor={color.textSecondary}
+              value={note}
+              onChangeText={setNote}
+              maxLength={140}
+              style={styles.input}
+            />
+            <Button label="Hold the line" onPress={() => onLog('held')} loading={busy} />
+            <Button label="Report a break" variant="ghost" onPress={() => onLog('broke')} />
+          </>
+        ) : (
+          <Mono>{`LOGGED TODAY · ${verdict.toUpperCase()}`}</Mono>
         )}
       </Card>
 
       {state && state.crews.length > 0 ? (
-        <Card>
-          <Eyebrow>Your crews</Eyebrow>
-          {state.crews.map((crew) => (
-            <View key={crew.id} style={styles.crewRow}>
+        state.crews.map((crew) => (
+          <Card key={crew.id}>
+            <View style={styles.crewHead}>
               <Body color={color.textPrimary}>{crew.name}</Body>
-              <Mono>{`CREW ${crew.checkedInCount}/${crew.memberCount}`}</Mono>
+              <Mono>{`HELD ${crew.heldCount}/${crew.memberCount}${crew.brokeCount ? ` · ${crew.brokeCount} BROKE` : ''}`}</Mono>
             </View>
-          ))}
-          <Caption>Presence updates when your crew logs today.</Caption>
-        </Card>
+            <CrewDots members={crew.members} />
+          </Card>
+        ))
       ) : (
-        <Caption>No crew yet. Join one, or go Pro to start your own.</Caption>
+        <Caption>No crew yet. Join one, or go Pro to lead your own — you hold the line in front of people who know what you committed to.</Caption>
       )}
     </Screen>
   );
 }
 
-function greeting(): string {
-  const h = new Date().getHours();
-  if (h < 12) return 'Morning';
-  if (h < 18) return 'Afternoon';
-  return 'Evening';
+function KindChip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} style={[styles.chip, active && styles.chipActive]}>
+      <Text variant="caption" color={active ? color.bg : color.textBody}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function confirmBreak(): Promise<boolean> {
+  const msg = 'Log a break? The hold streak resets to zero. Integrity stands.';
+  if (Platform.OS === 'web') return Promise.resolve(typeof window !== 'undefined' ? window.confirm(msg) : true);
+  return new Promise((res) =>
+    Alert.alert('Report a break?', msg, [
+      { text: 'Cancel', style: 'cancel', onPress: () => res(false) },
+      { text: 'Report break', style: 'destructive', onPress: () => res(true) },
+    ]),
+  );
 }
 
 const styles = StyleSheet.create({
-  header: { marginBottom: space.xs },
-  crewRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  head: { alignItems: 'center', marginTop: space.section },
+  mark: { alignItems: 'center', paddingVertical: space.md },
+  crewHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  input: {
+    minHeight: 52,
+    backgroundColor: color.bg,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: color.rule,
+    paddingHorizontal: space.lg,
+    color: color.textPrimary,
+    fontFamily: 'IBMPlexSans_400Regular',
+    fontSize: 16,
+  },
+  kindRow: { flexDirection: 'row', gap: space.sm },
+  chip: {
+    flex: 1,
+    paddingVertical: space.md,
+    paddingHorizontal: space.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: color.rule,
+    alignItems: 'center',
+  },
+  chipActive: { backgroundColor: color.action, borderColor: color.action },
 });

@@ -18,17 +18,36 @@ export interface Entitlement {
   isCaptain: boolean;
 }
 
+export type Verdict = 'held' | 'broke';
+export type LineKind = 'abstain' | 'hold';
+
+/** The one standard the user holds. */
+export interface LineView {
+  id: string;
+  statement: string;
+  kind: LineKind;
+  startLocalDate: string;
+}
+
 export interface StreakView {
+  /** Consecutive held days — the hold streak. */
   current: number;
   longest: number;
   lastLocalDate: string | null;
+  lastVerdict: Verdict | null;
+  breaks: number;
+  resets: number;
+  integrity: number;
 }
 
 export interface CrewMemberView {
   id: string;
   name: string;
   role: 'member' | 'captain';
-  checkedInToday: boolean;
+  /** Today's posture: 'held' | 'broke' | 'dark' (logged nothing yet). */
+  posture: 'held' | 'broke' | 'dark';
+  /** The crewmate's line statement, if they have an active one (the witness). */
+  line: string | null;
 }
 
 export interface CrewView {
@@ -36,13 +55,17 @@ export interface CrewView {
   name: string;
   isCaptain: boolean;
   memberCount: number;
-  checkedInCount: number;
+  heldCount: number;
+  brokeCount: number;
   members: CrewMemberView[];
 }
 
 export interface HomeState {
   localDate: string;
-  checkedInToday: boolean;
+  /** The user's active line, or null (→ Today shows the "draw your line" empty state). */
+  line: LineView | null;
+  /** What was logged today for the active line, or null if not logged yet. */
+  todayVerdict: Verdict | null;
   streak: StreakView;
   crews: CrewView[];
 }
