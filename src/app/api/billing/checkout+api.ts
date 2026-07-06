@@ -48,11 +48,13 @@ export async function POST(req: Request) {
 
   const origin = appOrigin(req);
   const priceId = await resolvePrice(ref);
+  // Premium posture: 7-day free trial on individual Pro. Team seats (B2B) get none.
+  const trialDays = plan === 'pro' ? 7 : undefined;
   const session = await stripe().checkout.sessions.create({
     mode: 'subscription',
     customer: customerId,
     line_items: [{ price: priceId, quantity: seats }],
-    subscription_data: { metadata: { userId, plan } },
+    subscription_data: { metadata: { userId, plan }, ...(trialDays ? { trial_period_days: trialDays } : {}) },
     metadata: { userId, plan },
     success_url: `${origin}/settings?checkout=success`,
     cancel_url: `${origin}/paywall?checkout=cancel`,
