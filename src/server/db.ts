@@ -85,3 +85,7 @@ export async function withUser<T>(userId: string, fn: (client: PoolClient) => Pr
 }
 
 export const hasDb = () => Boolean(process.env.DATABASE_URL);
+export const hasVoyage = () => Boolean(process.env.VOYAGE_API_KEY || process.env.VOYAGE_AI_API_KEY);
+/** Full vector retrieval requires both a DB and Voyage embeddings; else the coach
+ *  falls back to keyword search over the curated corpus. */
+export const vectorEnabled = () => hasDb() && hasVoyage();

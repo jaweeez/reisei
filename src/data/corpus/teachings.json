@@ -1,0 +1,169 @@
+{
+  "version": "2026-07-06",
+  "teachings": [
+    {
+      "id": "sto-control",
+      "ideology": "stoicism",
+      "theme": "control",
+      "title": "The dichotomy of control",
+      "teaching": "Some things are up to you — your judgments, your effort, your response. Most are not — outcomes, other people, the past. Spend yourself only on what is yours to move.",
+      "practice": "Name the one thing in this situation that is actually up to you today. Act on that. Set the rest down.",
+      "source": "Epictetus, Enchiridion §1"
+    },
+    {
+      "id": "sto-amor-fati",
+      "ideology": "stoicism",
+      "theme": "adversity",
+      "title": "Amor fati",
+      "teaching": "Do not wish events to be as you want. Wish them to be as they are, and work from there. What happened is now material, not an insult.",
+      "practice": "Take today's setback as the assignment. Ask: given this, what's the next right move?",
+      "source": "Epictetus, Enchiridion §8"
+    },
+    {
+      "id": "sto-premeditatio",
+      "ideology": "stoicism",
+      "theme": "adversity",
+      "title": "Premeditatio malorum",
+      "teaching": "Rehearse difficulty before it arrives. The blow you have already imagined lands softer; the temptation you've named loses its ambush.",
+      "practice": "Name where today is most likely to knock you off. Decide your response now, while you're level.",
+      "source": "Seneca, Letters 91, 24"
+    },
+    {
+      "id": "sto-obstacle",
+      "ideology": "stoicism",
+      "theme": "adversity",
+      "title": "The impediment to action advances action",
+      "teaching": "What blocks the path becomes the path. The mind adapts and turns every obstacle to its own use. What stands in the way becomes the way.",
+      "practice": "Point at the thing you're avoiding. That's the rep. Start there.",
+      "source": "Marcus Aurelius, Meditations 5.20"
+    },
+    {
+      "id": "sto-virtue",
+      "ideology": "stoicism",
+      "theme": "discipline",
+      "title": "Character is the only thing fully yours",
+      "teaching": "Wealth, reputation, and comfort come and go on their own terms. How you act — honestly, with discipline, without excuse — is the one thing no one can take.",
+      "practice": "Judge today by one question: did you keep your word to yourself? Not by how you felt.",
+      "source": "Marcus Aurelius, Meditations 7.59"
+    },
+    {
+      "id": "sto-memento",
+      "ideology": "stoicism",
+      "theme": "impermanence",
+      "title": "Memento mori",
+      "teaching": "You could leave life right now. Let that determine what you do and say. The point is not fear — it's to stop wasting the day on things that don't matter.",
+      "practice": "One thing matters most today. Do that first, before the noise.",
+      "source": "Marcus Aurelius, Meditations 2.11"
+    },
+    {
+      "id": "cbt-distortions",
+      "ideology": "cbt",
+      "theme": "reframing",
+      "title": "Spot the distortion",
+      "teaching": "Strong feelings ride on distorted thoughts: all-or-nothing ('I blew it, so it's ruined'), catastrophizing, mind-reading, overgeneralizing from one miss.",
+      "practice": "Write the hot thought. Label the distortion in it. Naming it drains most of its charge.",
+      "source": "Cognitive Behavioral Therapy — cognitive distortions"
+    },
+    {
+      "id": "cbt-evidence",
+      "ideology": "cbt",
+      "theme": "reframing",
+      "title": "Test the thought",
+      "teaching": "A thought is a hypothesis, not a verdict. Ask what the actual evidence for and against it is, then write the more balanced, accurate version.",
+      "practice": "One missed day is data, not a definition. Evidence against 'I always quit'? List two times you didn't.",
+      "source": "Cognitive Behavioral Therapy — thought records"
+    },
+    {
+      "id": "cbt-activation",
+      "ideology": "cbt",
+      "theme": "discipline",
+      "title": "Behavioral activation",
+      "teaching": "Motivation follows action, not the other way around. Waiting to feel like it keeps you stuck; doing the small version of it changes how you feel.",
+      "practice": "Shrink the task until it's almost too small to refuse. Do that version now. Momentum is the goal.",
+      "source": "Cognitive Behavioral Therapy — behavioral activation"
+    },
+    {
+      "id": "cbt-abc",
+      "ideology": "cbt",
+      "theme": "reframing",
+      "title": "The ABC model",
+      "teaching": "It isn't the event (A) that sinks you but the belief about it (B) that drives the consequence (C). Change the belief and the consequence changes.",
+      "practice": "Event: you slipped. Belief: 'so why bother.' Swap the belief for 'so I log today and restart the count.'",
+      "source": "Albert Ellis — the ABC model"
+    },
+    {
+      "id": "cbt-should",
+      "ideology": "cbt",
+      "theme": "reframing",
+      "title": "Drop the 'shoulds'",
+      "teaching": "'I should be further along' is a rod you beat yourself with, and it never produces action — only guilt. Trade the should for a plan.",
+      "practice": "Rewrite one 'I should' as 'I will [small thing] by [time] today.'",
+      "source": "Cognitive Behavioral Therapy — cognitive restructuring"
+    },
+    {
+      "id": "mind-present",
+      "ideology": "mindfulness",
+      "theme": "present",
+      "title": "Return to now",
+      "teaching": "Most suffering lives in a replayed past or a rehearsed future. The present is usually workable. Attention is a muscle: notice it wandered, bring it back.",
+      "practice": "Three slow breaths. Name five things you can see. You're back. Now take the next action.",
+      "source": "Mindfulness — present-moment awareness"
+    },
+    {
+      "id": "mind-observe",
+      "ideology": "mindfulness",
+      "theme": "impermanence",
+      "title": "You are not the thought",
+      "teaching": "A craving or a doubt is a passing event in the mind, not a command and not you. Watch it arise, crest, and pass without acting on it.",
+      "practice": "Label it: 'urge.' Set a timer for ten minutes and just watch it. Most urges peak and fade if you don't feed them.",
+      "source": "Mindfulness — cognitive defusion / urge surfing"
+    },
+    {
+      "id": "mind-equanimity",
+      "ideology": "mindfulness",
+      "theme": "control",
+      "title": "Equanimity",
+      "teaching": "Meet the good and the hard with the same steady attention. You don't have to like what's happening to stop fighting the fact that it's happening.",
+      "practice": "Say what's true without judgment: 'This is hard right now.' Then breathe once and take one useful step.",
+      "source": "Mindfulness — equanimity"
+    },
+    {
+      "id": "mind-anchor",
+      "ideology": "mindfulness",
+      "theme": "present",
+      "title": "The breath is the anchor",
+      "teaching": "When the mind spins, the breath is always here to come back to. It's not about clearing the mind — it's about noticing you left, and returning, again and again.",
+      "practice": "One minute. Count breaths to ten, start over. When you notice you've drifted, that noticing is the whole exercise.",
+      "source": "Mindfulness — anchoring attention"
+    }
+  ],
+  "sources": [
+    {
+      "id": "sto-meditations-mit",
+      "ideology": "stoicism",
+      "org": "MIT Classics (public domain)",
+      "title": "Marcus Aurelius — Meditations",
+      "url": "https://classics.mit.edu/Antoninus/meditations.html",
+      "theme": "discipline",
+      "action": "extract"
+    },
+    {
+      "id": "sto-enchiridion-mit",
+      "ideology": "stoicism",
+      "org": "MIT Classics (public domain)",
+      "title": "Epictetus — The Enchiridion",
+      "url": "https://classics.mit.edu/Epictetus/epicench.html",
+      "theme": "control",
+      "action": "extract"
+    },
+    {
+      "id": "sto-sep",
+      "ideology": "stoicism",
+      "org": "Stanford Encyclopedia of Philosophy",
+      "title": "Stoicism",
+      "url": "https://plato.stanford.edu/entries/stoicism/",
+      "theme": "discipline",
+      "action": "extract"
+    }
+  ]
+}

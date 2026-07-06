@@ -16,12 +16,16 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "db:provision": "tsx scripts/provision-app-role.ts",
     "setup:stripe": "tsx scripts/setup-stripe.ts",
+    "ingest": "tsx scripts/ingest.ts",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "test": "jest"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^1.2.12",
     "@aws-sdk/client-sesv2": "^3.1079.0",
+    "@tavily/core": "^0.7.6",
+    "ai": "^4.3.19",
     "@expo-google-fonts/big-shoulders-display": "^0.2.3",
     "@expo-google-fonts/ibm-plex-mono": "^0.4.1",
     "@expo-google-fonts/ibm-plex-sans": "^0.4.1",
