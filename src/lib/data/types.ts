@@ -79,4 +79,6 @@ export interface HomeState {
   crews: CrewView[];
   /** The coach's nudge for today (in-app banner), or null. */
   todayNudge: string | null;
+  /** Whether the user has completed a Reset today. */
+  resetToday: boolean;
 }

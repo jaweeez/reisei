@@ -1,4 +1,4 @@
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
@@ -140,6 +140,12 @@ export default function Today() {
           <Mono>{`LOGGED TODAY · ${verdict.toUpperCase()}`}</Mono>
         )}
       </Card>
+
+      <Button
+        label={state?.resetToday ? 'Reset · run it again' : 'Reset · 60s to level'}
+        variant="ghost"
+        onPress={() => router.push('/reset')}
+      />
 
       {state && state.crews.length > 0 ? (
         state.crews.map((crew) => (

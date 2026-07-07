@@ -65,3 +65,9 @@ export async function setHoldTime(holdTime: string): Promise<boolean> {
   const res = await api('/api/prefs', { method: 'POST', body: JSON.stringify({ holdTime }) });
   return res.ok;
 }
+
+/** Log a completed Reset (box-breathing + grounding). Private composure practice. */
+export async function logReset(note?: string): Promise<boolean> {
+  const res = await api('/api/reset', { method: 'POST', body: JSON.stringify({ note }) });
+  return res.ok;
+}

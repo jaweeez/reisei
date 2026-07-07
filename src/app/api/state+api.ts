@@ -13,7 +13,8 @@ export async function GET(req: Request) {
     const me = (await c.query(`select tz from users where id = current_app_user()`)).rows[0] as { tz?: string } | undefined;
     const today = localDateFor(me?.tz ?? 'UTC');
 
-    const [lineRes, todayRes, streakRes, crewsRes, membersRes, memberLinesRes, verdictsRes, acksRes, nudgeRes] = await Promise.all([
+    const [lineRes, todayRes, streakRes, crewsRes, membersRes, memberLinesRes, verdictsRes, acksRes, nudgeRes, resetRes] =
+      await Promise.all([
       c.query(
         `select id, statement, kind, to_char(start_local_date,'YYYY-MM-DD') as "startLocalDate"
            from lines where user_id = current_app_user() and status = 'active' limit 1`,
@@ -30,6 +31,7 @@ export async function GET(req: Request) {
       c.query(`select user_id, verdict from check_ins where local_date = $1`, [today]),
       c.query(`select from_user_id, to_user_id from crew_acks where local_date = $1`, [today]),
       c.query(`select body from nudges where user_id = current_app_user() and local_date = $1 order by sent_at desc limit 1`, [today]),
+      c.query(`select 1 from practices where user_id = current_app_user() and kind = 'reset' and local_date = $1 limit 1`, [today]),
     ]);
 
     const line = (lineRes.rows[0] as LineView | undefined) ?? null;
@@ -87,6 +89,7 @@ export async function GET(req: Request) {
       },
       crews,
       todayNudge: (nudgeRes.rows[0]?.body as string) ?? null,
+      resetToday: (resetRes.rowCount ?? 0) > 0,
     };
   });
 
