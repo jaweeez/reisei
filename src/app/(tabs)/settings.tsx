@@ -63,6 +63,14 @@ export default function Settings() {
         <Button label="Open the Ledger" variant="secondary" onPress={() => router.push('/ledger')} />
       </Card>
 
+      {entitlement?.isAdmin && (
+        <Card>
+          <Eyebrow>Admin</Eyebrow>
+          <Caption>Platform oversight — every user and crew, and grant/revoke Pro.</Caption>
+          <Button label="Open Admin" variant="secondary" onPress={() => router.push('/admin')} />
+        </Card>
+      )}
+
       <Card>
         <Eyebrow>Coach</Eyebrow>
         <Caption>When to nudge you if the line's still open. The coach stays quiet on a held day.</Caption>

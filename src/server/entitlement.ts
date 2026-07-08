@@ -17,6 +17,8 @@ export interface Entitlement {
   canCreateCrew: boolean;
   /** Captains at least one crew today. */
   isCaptain: boolean;
+  /** True platform admin (superuser). Orthogonal to tier; implies premium. */
+  isAdmin: boolean;
 }
 
 export async function getEntitlement(userId: string): Promise<Entitlement> {
@@ -24,9 +26,11 @@ export async function getEntitlement(userId: string): Promise<Entitlement> {
     user_plan: string;
     has_seat: boolean;
     is_captain: boolean;
+    is_admin: boolean;
   }>(
     `select
         coalesce(u.plan, 'free') as user_plan,
+        coalesce(u.is_admin, false) as is_admin,
         exists(
           select 1 from seat_assignments sa
             join subscriptions s on s.id = sa.subscription_id
@@ -42,6 +46,7 @@ export async function getEntitlement(userId: string): Promise<Entitlement> {
   );
   const r = rows[0];
   const tier: Tier = r?.has_seat ? 'team' : ((r?.user_plan as Tier) ?? 'free');
-  const premium = tier !== 'free';
-  return { tier, premium, canCreateCrew: premium, isCaptain: !!r?.is_captain };
+  const isAdmin = !!r?.is_admin;
+  const premium = isAdmin || tier !== 'free';
+  return { tier, premium, canCreateCrew: premium, isCaptain: !!r?.is_captain, isAdmin };
 }

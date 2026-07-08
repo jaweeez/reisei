@@ -15,6 +15,7 @@
     "android:build": "eas build --platform android --profile preview",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:provision": "tsx scripts/provision-app-role.ts",
+    "create:admin": "tsx scripts/create-admin.ts",
     "setup:stripe": "tsx scripts/setup-stripe.ts",
     "ingest": "tsx scripts/ingest.ts",
     "lint": "expo lint",

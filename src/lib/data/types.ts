@@ -18,6 +18,29 @@ export interface Entitlement {
   premium: boolean;
   canCreateCrew: boolean;
   isCaptain: boolean;
+  /** True platform admin (superuser). Gates the Settings → Admin dashboard. */
+  isAdmin: boolean;
+}
+
+// --- Admin dashboard ---
+export interface AdminOverview {
+  users: number;
+  admins: number;
+  pro: number;
+  crews: number;
+  checkinsToday: number;
+  signups7d: number;
+  active7d: number;
+}
+
+export interface AdminUser {
+  id: string;
+  username: string;
+  name: string;
+  plan: 'free' | 'pro';
+  isAdmin: boolean;
+  createdAt: string;
+  crewCount: number;
 }
 
 export type Verdict = 'held' | 'broke';
