@@ -135,6 +135,276 @@
       "teaching": "When the mind spins, the breath is always here to come back to. It's not about clearing the mind — it's about noticing you left, and returning, again and again.",
       "practice": "One minute. Count breaths to ten, start over. When you notice you've drifted, that noticing is the whole exercise.",
       "source": "Mindfulness — anchoring attention"
+    },
+    {
+      "id": "ms-control-test",
+      "ideology": "modern-stoicism",
+      "theme": "control",
+      "title": "The control test",
+      "teaching": "Before you spend a feeling on it, sort it: is this mine to move, or not? Modern Stoic practice keeps a running line between the two and acts only on the first.",
+      "practice": "Split the situation into two columns — mine / not mine. Act only on the left one today.",
+      "source": "Modern Stoicism — the dichotomy of control, applied",
+      "url": "https://modernstoicism.com/"
+    },
+    {
+      "id": "ms-negative-viz",
+      "ideology": "modern-stoicism",
+      "theme": "adversity",
+      "title": "Rehearse the loss",
+      "teaching": "Picture losing what you rely on — not to dread it, but to stop taking it for granted and to plan for the knock before it lands.",
+      "practice": "Name one thing that could go wrong today. Decide your response now, while you're level.",
+      "source": "Modern Stoicism — negative visualization",
+      "url": "https://modernstoicism.com/"
+    },
+    {
+      "id": "ms-view-above",
+      "ideology": "modern-stoicism",
+      "theme": "present",
+      "title": "View from above",
+      "teaching": "Pull the camera back: this problem, set against your whole life and everyone alive — how big is it now? Perspective is a tool you can pick up on purpose.",
+      "practice": "Zoom out once. Then do the one small thing actually in front of you.",
+      "source": "Modern Stoicism — the view from above",
+      "url": "https://modernstoicism.com/"
+    },
+    {
+      "id": "act-defusion",
+      "ideology": "act",
+      "theme": "defusion",
+      "title": "A thought is not an order",
+      "teaching": "You can notice a thought — 'I'll fail' — without obeying it. Put 'I'm having the thought that…' in front of it and its grip loosens.",
+      "practice": "Name the loudest thought as a thought. Then act on your values, not on it.",
+      "source": "ACT — cognitive defusion",
+      "url": "https://contextualscience.org/act"
+    },
+    {
+      "id": "act-values",
+      "ideology": "act",
+      "theme": "values",
+      "title": "Move toward what matters",
+      "teaching": "Feelings come and go; values are a direction you keep choosing. Ask what kind of person you want to be here, then take one step that way.",
+      "practice": "Name the value under this. Take one small action toward it now.",
+      "source": "ACT — values and committed action",
+      "url": "https://contextualscience.org/act"
+    },
+    {
+      "id": "act-acceptance",
+      "ideology": "act",
+      "theme": "acceptance",
+      "title": "Make room for it",
+      "teaching": "Fighting a hard feeling doubles it. Make room for the discomfort and keep doing the thing that matters — that's acceptance, not surrender.",
+      "practice": "Drop the rope. Let the feeling be there while you take the next useful step.",
+      "source": "ACT — acceptance / expansion",
+      "url": "https://contextualscience.org/act"
+    },
+    {
+      "id": "bud-impermanence",
+      "ideology": "buddhism",
+      "theme": "impermanence",
+      "title": "This too will pass",
+      "teaching": "Every state — the craving, the mood, the win — is already changing. Trying to hold it still is where the suffering is.",
+      "practice": "Notice the urge rise. Watch it crest and fall without acting on it.",
+      "source": "Dhammapada (trans. Bhikkhu Sujato, CC0 / public domain)",
+      "url": "https://suttacentral.net/dhp"
+    },
+    {
+      "id": "bud-intention",
+      "ideology": "buddhism",
+      "theme": "intention",
+      "title": "Mind made",
+      "teaching": "What you repeat, you become; the deed starts as intention. Set the intention cleanly and the action follows it.",
+      "practice": "Before the task, name the intention behind it in one honest sentence.",
+      "source": "Dhammapada 1 (trans. Bhikkhu Sujato, CC0)",
+      "url": "https://suttacentral.net/dhp"
+    },
+    {
+      "id": "bud-attachment",
+      "ideology": "buddhism",
+      "theme": "attachment",
+      "title": "Loosen the grip",
+      "teaching": "Suffering rides on clinging — to outcomes, to being right, to how it should be. Loosen the grip and you can still act, just without the fever.",
+      "practice": "Name what you're clinging to. Do the next right thing anyway, holding it lightly.",
+      "source": "Buddhism — non-attachment",
+      "url": "https://suttacentral.net/"
+    },
+    {
+      "id": "dao-wuwei",
+      "ideology": "daoism",
+      "theme": "wu wei",
+      "title": "Effortless action",
+      "teaching": "Force creates resistance; water wears the stone by yielding. Act with the grain of the situation, not against it.",
+      "practice": "Find where you're forcing. Stop pushing there and look for the opening instead.",
+      "source": "Tao Te Ching (trans. James Legge, 1891, public domain)",
+      "url": "https://ctext.org/dao-de-jing"
+    },
+    {
+      "id": "dao-simplicity",
+      "ideology": "daoism",
+      "theme": "simplicity",
+      "title": "Empty to be useful",
+      "teaching": "The cup is useful because it's empty; the room, because of the space in it. Strip away the extra and what remains works.",
+      "practice": "Cut one thing off today's list that isn't yours to carry.",
+      "source": "Tao Te Ching, ch. 11 (trans. Legge, public domain)",
+      "url": "https://ctext.org/dao-de-jing"
+    },
+    {
+      "id": "dao-yielding",
+      "ideology": "daoism",
+      "theme": "yielding",
+      "title": "The soft overcomes the hard",
+      "teaching": "What is flexible survives; what is rigid breaks. Bend where you can so you don't snap where you can't.",
+      "practice": "Pick the one thing worth being rigid about. Yield on the rest.",
+      "source": "Tao Te Ching, ch. 76 (trans. Legge, public domain)",
+      "url": "https://ctext.org/dao-de-jing"
+    },
+    {
+      "id": "hin-karma-yoga",
+      "ideology": "hinduism",
+      "theme": "detachment",
+      "title": "Act, release the fruit",
+      "teaching": "Your right is to the work, never to its results. Do the duty in front of you fully, and let go of what the outcome will be.",
+      "practice": "Do the next task for its own sake. Decide now you'll accept whatever result comes.",
+      "source": "Bhagavad Gita 2.47 (public-domain translation)",
+      "url": "https://sacred-texts.com/hin/gita/"
+    },
+    {
+      "id": "hin-equanimity",
+      "ideology": "hinduism",
+      "theme": "equanimity",
+      "title": "Even-minded in both",
+      "teaching": "Meet success and failure with the same steady mind. That evenness — not the outcome — is the discipline itself.",
+      "practice": "Name today's likely win and likely loss. Resolve to meet both the same way.",
+      "source": "Bhagavad Gita 2.48 (public-domain translation)",
+      "url": "https://sacred-texts.com/hin/gita/"
+    },
+    {
+      "id": "hin-self-mastery",
+      "ideology": "hinduism",
+      "theme": "self-mastery",
+      "title": "Be your own ally",
+      "teaching": "The mind is the friend of the one who has mastered it, and the enemy of the one who hasn't. You choose which today.",
+      "practice": "Win one small argument with yourself — do the thing you said you'd do.",
+      "source": "Bhagavad Gita 6.5–6 (public-domain translation)",
+      "url": "https://sacred-texts.com/hin/gita/"
+    },
+    {
+      "id": "chr-next-right",
+      "ideology": "christianity",
+      "theme": "perseverance",
+      "title": "Do not be anxious about tomorrow",
+      "teaching": "Tomorrow will worry about itself; today has enough of its own. Steady the heart and do the next right thing in good faith.",
+      "practice": "Set tomorrow down. Do the one duty today is actually asking of you.",
+      "source": "World English Bible, Matthew 6:34 (public domain)",
+      "url": "https://ebible.org/web/"
+    },
+    {
+      "id": "chr-serve",
+      "ideology": "christianity",
+      "theme": "humility",
+      "title": "Strength that serves",
+      "teaching": "Count others' needs alongside your own and the ego quiets. Strength is proven in service, not in being seen.",
+      "practice": "Do one unseen thing for someone today, expecting nothing back.",
+      "source": "World English Bible, Philippians 2:3–4 (public domain)",
+      "url": "https://ebible.org/web/"
+    },
+    {
+      "id": "chr-forgive",
+      "ideology": "christianity",
+      "theme": "forgiveness",
+      "title": "Set down the debt",
+      "teaching": "Carrying a grievance costs you more than the one who wronged you. Forgiveness is releasing a debt you were never going to collect.",
+      "practice": "Name one resentment. Decide to stop charging interest on it.",
+      "source": "World English Bible, Colossians 3:13 (public domain)",
+      "url": "https://ebible.org/web/"
+    },
+    {
+      "id": "isl-sabr",
+      "ideology": "islam",
+      "theme": "patience",
+      "title": "Sabr — steady under strain",
+      "teaching": "Patience isn't passivity; it's holding your composure and your effort steady through hardship, without complaint.",
+      "practice": "In the next frustration, pause once before you react. Hold steady, then respond.",
+      "source": "The Qur'an — on patience (sabr)",
+      "url": "https://quran.com/"
+    },
+    {
+      "id": "isl-shukr",
+      "ideology": "islam",
+      "theme": "gratitude",
+      "title": "Shukr — count what you have",
+      "teaching": "Gratitude multiplies what is given and steadies the heart against the pull of always wanting more.",
+      "practice": "Name three things you have right now that you'd hate to lose. Then begin the day.",
+      "source": "The Qur'an — on gratitude (shukr)",
+      "url": "https://quran.com/"
+    },
+    {
+      "id": "isl-tawakkul",
+      "ideology": "islam",
+      "theme": "reliance",
+      "title": "Tie your camel, then trust",
+      "teaching": "Do everything in your power, then release the outcome. The effort is yours to give; the result is not yours to hold.",
+      "practice": "Give the full effort on one thing today. Then hand the result over and rest.",
+      "source": "On trust (tawakkul); 'tie your camel' — hadith, Jami' at-Tirmidhi",
+      "url": "https://quran.com/"
+    },
+    {
+      "id": "epi-desire",
+      "ideology": "epicureanism",
+      "theme": "desire",
+      "title": "Sort your wants",
+      "teaching": "Some desires are natural and necessary; some are just loud. Cut the loud ones and contentment gets cheap.",
+      "practice": "Name one craving today that's manufactured, not needed. Let it pass unfed.",
+      "source": "Epicurus, Letter to Menoeceus (public domain)",
+      "url": "https://epicurus.net/en/menoeceus.html"
+    },
+    {
+      "id": "epi-ataraxia",
+      "ideology": "epicureanism",
+      "theme": "tranquility",
+      "title": "Enough is a feast",
+      "teaching": "Pleasure is the absence of pain and disturbance, not endless more. What you already have, seen clearly, is often enough.",
+      "practice": "Before adding anything today, ask what you already have that's enough.",
+      "source": "Epicurus, Principal Doctrines (public domain)",
+      "url": "https://epicurus.net/en/principal.html"
+    },
+    {
+      "id": "epi-friendship",
+      "ideology": "epicureanism",
+      "theme": "friendship",
+      "title": "Guard your people",
+      "teaching": "Of all that wisdom gathers for a good life, the greatest by far is friendship. Tend it before you need it.",
+      "practice": "Reach out to one person who steadies you. Don't wait for a reason.",
+      "source": "Epicurus, Principal Doctrines XXVII (public domain)",
+      "url": "https://epicurus.net/en/principal.html"
+    },
+    {
+      "id": "exi-freedom",
+      "ideology": "existentialism",
+      "theme": "freedom",
+      "title": "Condemned to be free",
+      "teaching": "No script is handed to you; you are the sum of your choices. That is the weight and the freedom both.",
+      "practice": "Stop waiting for permission. Make one choice today you've been deferring.",
+      "source": "Existentialism — Stanford Encyclopedia of Philosophy",
+      "url": "https://plato.stanford.edu/entries/existentialism/"
+    },
+    {
+      "id": "exi-authenticity",
+      "ideology": "existentialism",
+      "theme": "authenticity",
+      "title": "Own it, don't outsource it",
+      "teaching": "Bad faith is hiding behind 'I had no choice.' Authenticity is owning that you did choose, and choosing on purpose.",
+      "practice": "Catch one 'I had to' today. Rewrite it as 'I chose to' — and mean it.",
+      "source": "Existentialism — Stanford Encyclopedia of Philosophy",
+      "url": "https://plato.stanford.edu/entries/existentialism/"
+    },
+    {
+      "id": "exi-meaning",
+      "ideology": "existentialism",
+      "theme": "meaning",
+      "title": "Make the meaning",
+      "teaching": "The universe won't hand you a why. You build it by what you commit to and keep repeating.",
+      "practice": "Name one thing worth doing even if no one notices. Do a piece of it today.",
+      "source": "Existentialism — Stanford Encyclopedia of Philosophy",
+      "url": "https://plato.stanford.edu/entries/existentialism/"
     }
   ],
   "sources": [
@@ -163,6 +433,51 @@
       "title": "Stoicism",
       "url": "https://plato.stanford.edu/entries/stoicism/",
       "theme": "discipline",
+      "action": "extract"
+    },
+    {
+      "id": "chr-web",
+      "ideology": "christianity",
+      "org": "World English Bible (public domain)",
+      "title": "World English Bible",
+      "url": "https://ebible.org/web/",
+      "theme": "perseverance",
+      "action": "extract"
+    },
+    {
+      "id": "dao-web",
+      "ideology": "daoism",
+      "org": "ctext.org — James Legge (1891, public domain)",
+      "title": "Tao Te Ching",
+      "url": "https://ctext.org/dao-de-jing",
+      "theme": "wu wei",
+      "action": "extract"
+    },
+    {
+      "id": "hin-web",
+      "ideology": "hinduism",
+      "org": "sacred-texts.com (public domain)",
+      "title": "Bhagavad Gita",
+      "url": "https://sacred-texts.com/hin/gita/",
+      "theme": "detachment",
+      "action": "extract"
+    },
+    {
+      "id": "epi-web",
+      "ideology": "epicureanism",
+      "org": "epicurus.net (public domain)",
+      "title": "Principal Doctrines",
+      "url": "https://epicurus.net/en/principal.html",
+      "theme": "tranquility",
+      "action": "extract"
+    },
+    {
+      "id": "bud-web",
+      "ideology": "buddhism",
+      "org": "SuttaCentral — Bhikkhu Sujato (CC0)",
+      "title": "The Dhammapada",
+      "url": "https://suttacentral.net/dhp",
+      "theme": "impermanence",
       "action": "extract"
     }
   ]

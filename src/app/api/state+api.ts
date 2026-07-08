@@ -1,6 +1,7 @@
 import { currentUser } from '@/server/auth/session';
 import { withUser } from '@/server/db';
 import { localDateFor } from '@/server/streak';
+import { IDEOLOGY_LABEL } from '@/data/corpus/types';
 import type { CrewView, HomeState, LineView, Verdict } from '@/lib/data/types';
 
 // GET /api/state → everything Today + Crew need, RLS-filtered: the active line,
@@ -13,7 +14,7 @@ export async function GET(req: Request) {
     const me = (await c.query(`select tz from users where id = current_app_user()`)).rows[0] as { tz?: string } | undefined;
     const today = localDateFor(me?.tz ?? 'UTC');
 
-    const [lineRes, todayRes, streakRes, crewsRes, membersRes, memberLinesRes, verdictsRes, acksRes, nudgeRes, resetRes] =
+    const [lineRes, todayRes, streakRes, crewsRes, membersRes, memberLinesRes, verdictsRes, acksRes, nudgeRes, resetRes, bearingRes] =
       await Promise.all([
       c.query(
         `select id, statement, kind, to_char(start_local_date,'YYYY-MM-DD') as "startLocalDate"
@@ -32,10 +33,22 @@ export async function GET(req: Request) {
       c.query(`select from_user_id, to_user_id from crew_acks where local_date = $1`, [today]),
       c.query(`select body from nudges where user_id = current_app_user() and local_date = $1 order by sent_at desc limit 1`, [today]),
       c.query(`select 1 from practices where user_id = current_app_user() and kind = 'reset' and local_date = $1 limit 1`, [today]),
+      // The primary followed school (by sort) + today's bearing for it, if already generated.
+      c.query(
+        `select us.ideology, b.principle,
+                exists(select 1 from bearing_logs bl where bl.user_id = current_app_user() and bl.bearing_id = b.id) as logged
+           from user_schools us
+           left join bearings b on b.ideology = us.ideology and b.local_date = $1
+          where us.user_id = current_app_user()
+          order by us.sort, us.created_at
+          limit 1`,
+        [today],
+      ),
     ]);
 
     const line = (lineRes.rows[0] as LineView | undefined) ?? null;
     const s = streakRes.rows[0] ?? {};
+    const bearingRow = bearingRes.rows[0] as { ideology: string; principle: string | null; logged: boolean } | undefined;
     const lineByUser = new Map<string, string>(memberLinesRes.rows.map((r) => [r.user_id as string, r.statement as string]));
     const verdictByUser = new Map<string, Verdict>(verdictsRes.rows.map((r) => [r.user_id as string, r.verdict as Verdict]));
     const acksReceived = new Map<string, number>();
@@ -90,6 +103,14 @@ export async function GET(req: Request) {
       crews,
       todayNudge: (nudgeRes.rows[0]?.body as string) ?? null,
       resetToday: (resetRes.rowCount ?? 0) > 0,
+      bearing: bearingRow
+        ? {
+            ideology: bearingRow.ideology,
+            label: IDEOLOGY_LABEL[bearingRow.ideology as keyof typeof IDEOLOGY_LABEL] ?? bearingRow.ideology,
+            principle: bearingRow.principle ?? '',
+            loggedToday: !!bearingRow.logged,
+          }
+        : null,
     };
   });
 

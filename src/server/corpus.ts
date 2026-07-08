@@ -29,7 +29,7 @@ export function teachingsToChunks(): TeachingChunk[] {
       ideology: t.ideology,
       theme: t.theme,
       title: t.title,
-      url: null,
+      url: t.url ?? null,
       content: parts.join(' '),
     };
   });

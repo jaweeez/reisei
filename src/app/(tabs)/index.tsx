@@ -126,7 +126,7 @@ export default function Today() {
         {verdict === null ? (
           <>
             <TextInput
-              placeholder="Field report (optional)"
+              placeholder="Report for the day…"
               placeholderTextColor={color.textSecondary}
               value={note}
               onChangeText={setNote}
@@ -140,6 +140,22 @@ export default function Today() {
           <Mono>{`LOGGED TODAY · ${verdict.toUpperCase()}`}</Mono>
         )}
       </Card>
+
+      {state && (
+        <Pressable style={styles.bearing} onPress={() => router.push('/bearing')}>
+          <Mono color={color.actionText}>Today's bearing</Mono>
+          {!state.bearing ? (
+            <Body color={color.textPrimary}>Set your bearing →</Body>
+          ) : state.bearing.principle ? (
+            <>
+              <Body color={color.textPrimary}>{state.bearing.principle}</Body>
+              <Mono>{`${state.bearing.label}${state.bearing.loggedToday ? ' · LOGGED' : ''}`}</Mono>
+            </>
+          ) : (
+            <Body color={color.textPrimary}>{`Open today's bearing · ${state.bearing.label} →`}</Body>
+          )}
+        </Pressable>
+      )}
 
       <Button
         label={state?.resetToday ? 'Reset · run it again' : 'Reset · 60s to level'}
@@ -188,6 +204,7 @@ function confirmBreak(): Promise<boolean> {
 const styles = StyleSheet.create({
   head: { alignItems: 'center', marginTop: space.section },
   banner: { gap: space.xs, padding: space.lg, borderRadius: radius.md, borderLeftWidth: 3, borderLeftColor: color.action, backgroundColor: color.actionSoft },
+  bearing: { gap: space.xs, padding: space.lg, borderRadius: radius.md, borderWidth: 1, borderColor: color.rule, backgroundColor: color.card },
   mark: { alignItems: 'center', paddingVertical: space.md },
   crewHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   input: {

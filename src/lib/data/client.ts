@@ -1,5 +1,15 @@
 import { api } from '@/lib/api';
-import type { AckKind, HomeState, LineKind, LineView, StreakView, Verdict } from '@/lib/data/types';
+import type {
+  AckKind,
+  BearingHistory,
+  BearingResponse,
+  HomeState,
+  LineKind,
+  LineView,
+  SchoolView,
+  StreakView,
+  Verdict,
+} from '@/lib/data/types';
 
 // The Today + Crew + Lines data client. Same base resolution + auth as the other clients.
 
@@ -70,4 +80,35 @@ export async function setHoldTime(holdTime: string): Promise<boolean> {
 export async function logReset(note?: string): Promise<boolean> {
   const res = await api('/api/reset', { method: 'POST', body: JSON.stringify({ note }) });
   return res.ok;
+}
+
+// --- The Bearing: a daily principle from a chosen school ---
+
+/** Today's bearing for each followed school + the full school picker. */
+export async function fetchBearing(): Promise<BearingResponse | null> {
+  const res = await api<BearingResponse>('/api/bearing');
+  return res.ok ? res.data : null;
+}
+
+/** Replace the set of schools the user follows. Returns the updated list, or `upsell` at the free cap. */
+export async function setSchools(
+  ideologies: string[],
+): Promise<{ schools?: SchoolView[]; error?: string; upsell?: boolean }> {
+  const res = await api<{ schools?: SchoolView[]; error?: string; upsell?: boolean }>('/api/bearing/schools', {
+    method: 'PUT',
+    body: JSON.stringify({ ideologies }),
+  });
+  return { ...res.data, upsell: res.status === 402 || res.data.upsell };
+}
+
+/** Log a private response to today's bearing (never shown to the crew). */
+export async function logBearing(bearingId: string, note: string): Promise<boolean> {
+  const res = await api('/api/bearing', { method: 'POST', body: JSON.stringify({ bearingId, note }) });
+  return res.ok;
+}
+
+/** The user's private log archive (free = last 30 days; Pro = everything). */
+export async function fetchBearingHistory(): Promise<BearingHistory | null> {
+  const res = await api<BearingHistory>('/api/bearing/history');
+  return res.ok ? res.data : null;
 }

@@ -104,4 +104,69 @@ export interface HomeState {
   todayNudge: string | null;
   /** Whether the user has completed a Reset today. */
   resetToday: boolean;
+  /** The Today card for The Bearing. null → user follows no school. An empty `principle`
+   *  → follows a school but today's bearing isn't generated yet (open the screen to draw it). */
+  bearing: BearingToday | null;
+}
+
+// --- The Bearing: a daily operating principle from a chosen school ---
+
+/** The link-out for a bearing: our own wording, their source. */
+export interface BearingSource {
+  url: string;
+  title: string;
+  attribution: string;
+}
+
+/** One selectable school (the analog to Enso's pathways). */
+export interface SchoolView {
+  ideology: string;
+  label: string;
+  blurb: string;
+  followed: boolean;
+}
+
+/** Today's bearing for one followed school, with the user's log status. */
+export interface BearingView {
+  bearingId: string;
+  ideology: string;
+  label: string;
+  principle: string;
+  /** A short question / concrete action to carry into today, or null. */
+  prompt: string | null;
+  source: BearingSource;
+  /** A subtle affiliation / copyright note (Enso's copyrightNote pattern). */
+  copyright: string;
+  loggedToday: boolean;
+}
+
+/** The compact Today-card view of the primary followed school's bearing. */
+export interface BearingToday {
+  ideology: string;
+  label: string;
+  /** The principle text, or '' when it isn't generated yet. */
+  principle: string;
+  loggedToday: boolean;
+}
+
+/** GET /api/bearing — the picker (all schools) + today's bearings (followed). */
+export interface BearingResponse {
+  localDate: string;
+  schools: SchoolView[];
+  today: BearingView[];
+}
+
+/** One past entry in the user's private log. */
+export interface BearingLogItem {
+  date: string;
+  ideology: string;
+  label: string;
+  principle: string;
+  note: string;
+}
+
+/** GET /api/bearing/history — the log archive. `upsell` when older entries are gated. */
+export interface BearingHistory {
+  logs: BearingLogItem[];
+  upsell: boolean;
 }

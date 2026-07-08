@@ -58,6 +58,12 @@ export default function Settings() {
       </Card>
 
       <Card>
+        <Eyebrow>The Bearing</Eyebrow>
+        <Caption>A daily principle to steer by, from the schools you follow. Direction, not mood.</Caption>
+        <Button label="Set your bearing" variant="secondary" onPress={() => router.push('/bearing')} />
+      </Card>
+
+      <Card>
         <Eyebrow>Ledger</Eyebrow>
         <Caption>The shape of your composure — hold calendar, hold-rate, where breaks cluster.</Caption>
         <Button label="Open the Ledger" variant="secondary" onPress={() => router.push('/ledger')} />
