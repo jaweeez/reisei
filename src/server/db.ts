@@ -1,4 +1,5 @@
 import { Pool, type PoolClient } from 'pg';
+import { Pool as NeonPool, neonConfig } from '@neondatabase/serverless';
 
 // pg Pools — the same driver the shared MuWorks/Hayway backend uses. Neon-friendly
 // ssl + timeouts (Neon autosuspends idle compute; the first query after a cold start
@@ -19,9 +20,24 @@ let _adminPool: Pool | null = null;
 let _directPool: Pool | null = null;
 let _warnedOwnerFallback = false;
 
+// Escape hatch for networks that block the Postgres wire protocol on :5432 (some
+// corporate/work firewalls pass the TCP handshake but drop the TLS negotiation) while
+// still allowing HTTPS. Neon also speaks its protocol over a WebSocket on :443, and
+// @neondatabase/serverless's Pool is API-compatible with pg's. Opt in with
+// DB_TRANSPORT=neon-ws — CLI/dev only; Vercel/prod stays on plain pg over :5432.
+function makeNeonWsPool(connStr: string): Pool {
+  neonConfig.webSocketConstructor = globalThis.WebSocket; // Node 22+/24 built-in; no `ws` dep
+  // The WS transport is always TLS on :443, so libpq-only params just confuse the parser.
+  const connectionString = connStr.replace(/[?&](sslmode|channel_binding)=[^&]*/g, '').replace(/\?$/, '');
+  const p = new NeonPool({ connectionString, connectionTimeoutMillis: 30000, max: 5 });
+  p.on('error', () => {});
+  return p as unknown as Pool;
+}
+
 function makePool(connStr: string): Pool {
   const connectionString = connStr.replace('sslmode=require', '');
   const local = /localhost|127\.0\.0\.1/.test(connectionString);
+  if (!local && process.env.DB_TRANSPORT === 'neon-ws') return makeNeonWsPool(connStr);
   const p = new Pool({
     connectionString,
     ssl: local ? undefined : { rejectUnauthorized: true },
