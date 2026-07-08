@@ -114,7 +114,7 @@ export default function Bearing() {
           ) : (
             <>
               <TextInput
-                placeholder="Log your read — what this means for today…"
+                placeholder="Log your read. What it means for today…"
                 placeholderTextColor={color.textSecondary}
                 value={notes[b.bearingId] ?? ''}
                 onChangeText={(t) => setNotes((n) => ({ ...n, [b.bearingId]: t }))}

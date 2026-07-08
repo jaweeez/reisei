@@ -50,7 +50,7 @@ export default function Admin() {
         <Eyebrow>Platform</Eyebrow>
         {overview ? (
           <>
-            <Mono>{`USERS ${overview.users}  ·  PRO ${overview.pro}  ·  ADMINS ${overview.admins}  ·  CREWS ${overview.crews}`}</Mono>
+            <Mono>{`USERS ${overview.users}  ·  PRO ${overview.pro}  ·  ADMINS ${overview.admins}  ·  CORNERS ${overview.crews}`}</Mono>
             <Mono>{`ACTIVE 7d ${overview.active7d}  ·  NEW 7d ${overview.signups7d}  ·  CHECK-INS TODAY ${overview.checkinsToday}`}</Mono>
           </>
         ) : (
@@ -84,7 +84,7 @@ export default function Admin() {
                 {u.name}
                 {u.isAdmin ? '  ·  ADMIN' : ''}
               </Body>
-              <Mono>{`@${u.username} · ${u.plan.toUpperCase()} · ${u.crewCount} crew · ${u.createdAt}`}</Mono>
+              <Mono>{`@${u.username} · ${u.plan.toUpperCase()} · ${u.crewCount} corners · ${u.createdAt}`}</Mono>
             </View>
             <Pressable
               onPress={() => toggle(u)}

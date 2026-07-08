@@ -1,8 +1,7 @@
-// The coach's rule engine — pure + unit-tested. Given a user's current state, decide
-// which single nudge (if any) to send right now, with verbatim in-voice copy.
-// "A coach, not a counselor. Direction, not mood." A held day generates ZERO nudges —
-// silence is the reward. Never: "you've got this", "how are you feeling", guilt, or an
-// exclamation mark outside a hard milestone.
+// The coach's rule engine, pure and unit-tested. Given a user's current state, decide
+// which single nudge (if any) to send right now, with verbatim in-voice copy. A held day
+// generates ZERO nudges; silence is the reward. The voice is a coach, not a counselor:
+// help them notice what's up and give one small move. Never guilt, hype, or emoji.
 
 export type NudgeKind = 'post' | 'at_risk' | 'after_break' | 'after_miss' | 'stand_up' | 'milestone';
 
@@ -32,12 +31,12 @@ const first = (name: string) => name?.split(' ')[0] || 'you';
 
 /** The verbatim string table. One place so the voice is enforced once. */
 export const NUDGE_COPY: Record<NudgeKind, (c: TickContext) => string> = {
-  stand_up: (c) => `${first(c.name)}, you got flagged. Line's still open. Log today.`,
-  after_break: () => `Line broke yesterday. Today it holds or it doesn't. Log.`,
-  after_miss: () => `Missed yesterday. The line reset. Stand it back up today.`,
-  at_risk: (c) => `${c.current}-day line. Two hours left. Don't let it go dark.`,
-  post: () => `Line's still open. Log today.`,
-  milestone: (c) => `${c.current} days. The line held. Keep standing it.`,
+  stand_up: (c) => `${first(c.name)}, someone in your Corner reached out. Your line's still open. Check in today.`,
+  after_break: () => `You logged the break yesterday. That's the honest move. Check in today.`,
+  after_miss: () => `Yesterday got away from you. No story to tell yourself, just check in today.`,
+  at_risk: (c) => `${c.current}-day line, still open. Before the day's gone: how are you actually doing?`,
+  post: () => `Line's still open. Two minutes: how'd today actually go?`,
+  milestone: (c) => `${c.current} days logged. That's not nothing. Keep showing up.`,
 };
 
 /**

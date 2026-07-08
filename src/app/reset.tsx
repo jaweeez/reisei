@@ -84,7 +84,7 @@ export default function Reset() {
   return (
     <Screen>
       <Title>Head clear?</Title>
-      <Body>Name the one thing that’s actually yours to move right now. Not the whole mess — the one thing.</Body>
+      <Body>Name the one thing that’s actually yours to move right now. Not the whole mess. Just the one thing.</Body>
       <TextInput
         placeholder="The one thing…"
         placeholderTextColor={color.textSecondary}
@@ -95,7 +95,7 @@ export default function Reset() {
         style={styles.input}
       />
       <Body color={color.textSecondary}>Then do that. Nothing else needs you right now.</Body>
-      <Button label="Done — back to level" onPress={finish} loading={busy} />
+      <Button label="Done. Back to level" onPress={finish} loading={busy} />
     </Screen>
   );
 }

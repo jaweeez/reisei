@@ -58,23 +58,23 @@ export default function Paywall() {
       <View style={styles.head}>
         <VialMark width={140} />
         <Title style={{ marginTop: space.lg }}>Stay level, together</Title>
-        <Caption center>Free to join a crew. Pay to lead one.</Caption>
+        <Caption center>Free to join a Corner. Pay to lead one.</Caption>
       </View>
 
       <Card>
         <Eyebrow>Reisei Pro</Eyebrow>
         <Text variant="display" color={color.textPrimary}>$6.99<Text variant="caption">/mo</Text></Text>
-        <Body>Create & captain a crew, full history, streak insurance, widgets, and advanced reminders.</Body>
+        <Body>Create & captain a Corner, full history, streak insurance, widgets, and advanced reminders.</Body>
         <Button label="Go Pro · Monthly" onPress={() => buyPro('monthly')} loading={busy === 'pro-monthly'} />
-        <Button label="Go Pro · Annual — $49.99/yr" variant="secondary" onPress={() => buyPro('annual')} loading={busy === 'pro-annual'} />
+        <Button label="Go Pro · Annual · $49.99/yr" variant="secondary" onPress={() => buyPro('annual')} loading={busy === 'pro-annual'} />
         <Caption>7-day free trial. Cancel anytime.</Caption>
       </Card>
 
       <Card>
-        <Eyebrow>Crew · Team</Eyebrow>
+        <Eyebrow>Corner · Team</Eyebrow>
         <Text variant="display" color={color.textPrimary}>$4.99<Text variant="caption">/seat/mo</Text></Text>
-        <Body>Sponsor your whole crew. Every seated member gets Pro, and you get captain tools. Min 3 seats.</Body>
-        <Button label="Sponsor a crew" variant="secondary" onPress={() => buyTeam('monthly')} loading={busy === 'team-monthly'} />
+        <Body>Sponsor your whole Corner. Every seated member gets Pro, and you get captain tools. Min 3 seats.</Body>
+        <Button label="Sponsor a Corner" variant="secondary" onPress={() => buyTeam('monthly')} loading={busy === 'team-monthly'} />
         {Platform.OS !== 'web' && <Caption>Team seats are managed on reiseiapp.com.</Caption>}
       </Card>
 

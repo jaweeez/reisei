@@ -12,7 +12,7 @@ function TabGlyph({ glyph, focused }: { glyph: string; focused: boolean }) {
 export default function TabsLayout() {
   const { status } = useAuth();
   if (status === 'loading') return null;
-  if (status === 'guest') return <Redirect href="/sign-in" />;
+  if (status === 'guest') return <Redirect href="/landing" />;
 
   return (
     <Tabs
@@ -30,7 +30,7 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="crew"
-        options={{ title: 'CREW', tabBarIcon: ({ focused }) => <TabGlyph glyph="●" focused={focused} /> }}
+        options={{ title: 'CORNER', tabBarIcon: ({ focused }) => <TabGlyph glyph="●" focused={focused} /> }}
       />
       <Tabs.Screen
         name="settings"

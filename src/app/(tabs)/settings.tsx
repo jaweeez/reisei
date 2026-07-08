@@ -8,7 +8,7 @@ import { iapEnabled, restore } from '@/lib/billing/iap';
 import { setHoldTime } from '@/lib/data/client';
 import { color, radius, space } from '@/theme';
 
-const TIER_LABEL: Record<string, string> = { free: 'Free', pro: 'Reisei Pro', team: 'Crew · Team seat' };
+const TIER_LABEL: Record<string, string> = { free: 'Free', pro: 'Reisei Pro', team: 'Corner · Team seat' };
 const HOLD_TIMES = ['18:00', '20:00', '22:00'];
 
 export default function Settings() {
@@ -59,20 +59,20 @@ export default function Settings() {
 
       <Card>
         <Eyebrow>The Bearing</Eyebrow>
-        <Caption>A daily principle to steer by, from the schools you follow. Direction, not mood.</Caption>
+        <Caption>A daily principle to steer by, from the schools you follow. Perspective when your head gets loud.</Caption>
         <Button label="Set your bearing" variant="secondary" onPress={() => router.push('/bearing')} />
       </Card>
 
       <Card>
         <Eyebrow>Ledger</Eyebrow>
-        <Caption>The shape of your composure — hold calendar, hold-rate, where breaks cluster.</Caption>
+        <Caption>The shape of your composure: hold calendar, hold-rate, where the hard days land.</Caption>
         <Button label="Open the Ledger" variant="secondary" onPress={() => router.push('/ledger')} />
       </Card>
 
       {entitlement?.isAdmin && (
         <Card>
           <Eyebrow>Admin</Eyebrow>
-          <Caption>Platform oversight — every user and crew, and grant/revoke Pro.</Caption>
+          <Caption>Platform oversight: every user and Corner, and grant/revoke Pro.</Caption>
           <Button label="Open Admin" variant="secondary" onPress={() => router.push('/admin')} />
         </Card>
       )}

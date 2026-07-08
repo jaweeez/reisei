@@ -11,7 +11,7 @@ import { color, palette, radius, space } from '@/theme';
 const ACK_FOR: Record<Posture, { kind: AckKind; label: string }> = {
   held: { kind: 'seen', label: 'Seen' },
   broke: { kind: 'respect', label: 'Respect' },
-  dark: { kind: 'stand_up', label: 'Stand up' },
+  dark: { kind: 'stand_up', label: 'Reach out' },
 };
 
 export default function Crew() {
@@ -60,13 +60,13 @@ export default function Crew() {
 
   async function onInvite(crewId: string) {
     const res = await createInvite(crewId);
-    if (res.code) notify(`Invite code: ${res.code}`, 'Share this with your crew');
+    if (res.code) notify(`Invite code: ${res.code}`, 'Share this with your Corner');
     else if (res.error) notify(res.error);
   }
 
   return (
     <Screen>
-      <Title>Crew</Title>
+      <Title>Corner</Title>
 
       {state?.crews.map((crew) => (
         <Card key={crew.id}>
@@ -77,21 +77,21 @@ export default function Crew() {
           {crew.members.map((m) => (
             <MemberRow key={m.id} crew={crew} member={m} isSelf={m.id === user?.id} onAck={() => onAck(crew.id, m)} />
           ))}
-          {crew.isCaptain && <Button label="Invite to crew" variant="secondary" onPress={() => onInvite(crew.id)} />}
+          {crew.isCaptain && <Button label="Invite to Corner" variant="secondary" onPress={() => onInvite(crew.id)} />}
         </Card>
       ))}
 
       <Card>
-        <Eyebrow>Join a crew</Eyebrow>
+        <Eyebrow>Join a Corner</Eyebrow>
         <TextInput placeholder="Invite code" placeholderTextColor={color.textSecondary} autoCapitalize="characters" value={code} onChangeText={setCode} style={styles.input} />
         <Button label="Join" variant="secondary" onPress={onJoin} loading={busy} />
       </Card>
 
       <Card>
-        <Eyebrow>Start a crew</Eyebrow>
-        <Caption>Pay to lead — creating a crew is Pro. Members you invite join free and hold their line in front of the crew.</Caption>
-        <TextInput placeholder="Crew name" placeholderTextColor={color.textSecondary} value={newName} onChangeText={setNewName} style={styles.input} />
-        <Button label={entitlement?.canCreateCrew ? 'Create crew' : 'Go Pro to lead'} onPress={onCreate} loading={busy} />
+        <Eyebrow>Start a Corner</Eyebrow>
+        <Caption>Pay to lead. Creating a Corner is Pro. Members you invite join free and check in alongside your Corner.</Caption>
+        <TextInput placeholder="Corner name" placeholderTextColor={color.textSecondary} value={newName} onChangeText={setNewName} style={styles.input} />
+        <Button label={entitlement?.canCreateCrew ? 'Create Corner' : 'Go Pro to lead'} onPress={onCreate} loading={busy} />
       </Card>
     </Screen>
   );

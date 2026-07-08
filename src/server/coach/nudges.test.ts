@@ -19,7 +19,7 @@ describe('pickNudge', () => {
   it('morning after a break → after_break', () => {
     const n = pickNudge(ctx({ localHour: 7, brokeYesterday: true }));
     expect(n?.kind).toBe('after_break');
-    expect(n?.body).toBe("Line broke yesterday. Today it holds or it doesn't. Log.");
+    expect(n?.body).toBe("You logged the break yesterday. That's the honest move. Check in today.");
   });
 
   it('morning after going dark → after_miss', () => {

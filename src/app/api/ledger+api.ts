@@ -3,7 +3,7 @@ import { withUser } from '@/server/db';
 import { getEntitlement } from '@/server/entitlement';
 
 // GET /api/ledger → the Pro "Ledger": the shape of the trained mind. Hold calendar,
-// stats (hold-rate, break-clustering by weekday), retired-lines archive, field reports.
+// stats (hold-rate, break-clustering by weekday), retired-lines archive, the log.
 // Gated on entitlement.premium — the Pro paywall stands on earned depth.
 
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];

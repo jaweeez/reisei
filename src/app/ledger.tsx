@@ -26,7 +26,7 @@ export default function LedgerScreen() {
         <Title>The Ledger</Title>
         <Card>
           <Eyebrow>Pro</Eyebrow>
-          <Body>The Ledger is the shape of your composure — hold calendar, hold-rate, where your breaks cluster, and every line you've retired. It's a Pro feature.</Body>
+          <Body>The Ledger is the shape of your composure: your hold calendar, your hold-rate, where the hard days land, and every line you've retired. It's a Pro feature.</Body>
           <Button label="Go Pro" onPress={() => router.replace('/paywall')} />
           <Button label="Back" variant="ghost" onPress={() => router.back()} />
         </Card>
@@ -44,9 +44,9 @@ export default function LedgerScreen() {
 
       <Card>
         <Eyebrow>Line stats</Eyebrow>
-        <Mono>{`HOLD-RATE ${stats.holdRate ?? '—'}%  ·  LONGEST ${stats.longest}  ·  INTEGRITY ${stats.integrity}`}</Mono>
+        <Mono>{`HOLD-RATE ${stats.holdRate ?? '-'}%  ·  LONGEST ${stats.longest}  ·  INTEGRITY ${stats.integrity}`}</Mono>
         <Mono>{`HELD ${stats.held}  ·  BROKE ${stats.broke}  ·  RESETS ${stats.resets}`}</Mono>
-        {stats.worstDay && <Caption>{`Breaks cluster on ${stats.worstDay}. Plan for it.`}</Caption>}
+        {stats.worstDay && <Caption>{`The hard days cluster on ${stats.worstDay}. Worth planning for.`}</Caption>}
       </Card>
 
       <Card>
@@ -56,7 +56,7 @@ export default function LedgerScreen() {
             <View key={d.date} style={[styles.cell, d.verdict === 'held' ? styles.held : styles.broke]} />
           ))}
         </View>
-        <Caption>Filled = held · brass ring = honest break. Gaps are the days you went dark.</Caption>
+        <Caption>Filled = held · brass ring = honest break. Gaps are the days you went quiet.</Caption>
       </Card>
 
       {retiredLines.length > 0 && (
@@ -65,7 +65,7 @@ export default function LedgerScreen() {
           {retiredLines.map((l, i) => (
             <View key={i} style={styles.retired}>
               <Body color={color.textPrimary}>{l.statement}</Body>
-              <Mono>{`${l.start} → ${l.retired ?? '—'}`}</Mono>
+              <Mono>{`${l.start} → ${l.retired ?? '-'}`}</Mono>
             </View>
           ))}
         </Card>
@@ -73,7 +73,7 @@ export default function LedgerScreen() {
 
       {fieldReports.length > 0 && (
         <Card>
-          <Eyebrow>Field reports</Eyebrow>
+          <Eyebrow>Reports</Eyebrow>
           {fieldReports.slice(0, 30).map((r, i) => (
             <View key={i} style={styles.report}>
               <Mono color={r.verdict === 'broke' ? color.actionText : color.presenceLight}>{`${r.date} · ${r.verdict.toUpperCase()}`}</Mono>

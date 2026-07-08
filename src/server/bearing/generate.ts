@@ -2,7 +2,7 @@ import { generateText } from 'ai';
 import { anthropic, CHAT_MODEL, chatEnabled } from '@/server/ai/anthropic';
 import { searchTeachings } from '@/server/ai/vector';
 import type { BearingSource } from '@/lib/data/types';
-import { getSchool, themeForToday } from './schools';
+import { getSchool, stateForToday, themeForToday } from './schools';
 import { BEARING_SYSTEM, buildBearingPrompt, parseBearingText, pickSource, splitTeachingContent } from './compose';
 
 // Generate "the bearing" for a school on a given local date: retrieve grounding from the
@@ -24,7 +24,8 @@ export async function generateBearing(ideology: string, localDate: string): Prom
   if (!school) throw new Error(`unknown school: ${ideology}`);
 
   const theme = themeForToday(school, localDate);
-  const retrieved = await searchTeachings(theme || school.label, ideology, 5);
+  const state = stateForToday(localDate);
+  const retrieved = await searchTeachings(`${theme} ${state}`.trim() || school.label, ideology, 5);
   const source = pickSource(retrieved, school);
   const grounding = retrieved.map((t) => ({ title: t.title, ideology: t.ideology, theme: t.theme, url: t.url }));
 
@@ -40,7 +41,7 @@ export async function generateBearing(ideology: string, localDate: string): Prom
     const { text } = await generateText({
       model: anthropic(CHAT_MODEL),
       system: BEARING_SYSTEM,
-      prompt: buildBearingPrompt(school, theme, retrieved),
+      prompt: buildBearingPrompt(school, theme, state, retrieved),
       maxTokens: 240,
       temperature: 0.7,
     });

@@ -1,6 +1,6 @@
 /// <reference types="jest" />
 import type { RetrievedTeaching } from '@/server/ai/vector';
-import { getSchool, isSchoolId, SCHOOL_IDS, SCHOOLS, themeForToday } from './schools';
+import { DAILY_STATES, getSchool, isSchoolId, SCHOOL_IDS, SCHOOLS, stateForToday, themeForToday } from './schools';
 import { BEARING_SYSTEM, parseBearingText, pickSource, splitTeachingContent } from './compose';
 
 const chunk = (over: Partial<RetrievedTeaching> = {}): RetrievedTeaching => ({
@@ -61,6 +61,22 @@ describe('themeForToday', () => {
   });
 });
 
+describe('stateForToday', () => {
+  it('is deterministic for a date and always one of DAILY_STATES', () => {
+    expect(stateForToday('2026-07-08')).toBe(stateForToday('2026-07-08'));
+    expect(DAILY_STATES).toContain(stateForToday('2026-07-08'));
+  });
+
+  it('rotates across the year (not a constant)', () => {
+    const seen = new Set(
+      Array.from({ length: 40 }, (_, i) =>
+        stateForToday(`2026-${String((i % 12) + 1).padStart(2, '0')}-${String((i % 28) + 1).padStart(2, '0')}`),
+      ),
+    );
+    expect(seen.size).toBeGreaterThan(1);
+  });
+});
+
 describe('compose', () => {
   const sto = getSchool('stoicism')!;
 
@@ -82,18 +98,24 @@ describe('compose', () => {
     expect(prompt).toBe('Name the one thing that is yours.');
   });
 
-  it('parseBearingText splits the principle from the Q: line', () => {
-    const parsed = parseBearingText('Hold what is yours; let the rest go.\nQ: What is the one thing that is yours today?');
-    expect(parsed.principle).toBe('Hold what is yours; let the rest go.');
-    expect(parsed.prompt).toBe('What is the one thing that is yours today?');
+  it('parseBearingText splits the read from the Try: technique (and still accepts Q:)', () => {
+    const t = parseBearingText('Anger is up. Feel it, do not obey it.\nTry: name it out loud, one slow breath.');
+    expect(t.principle).toBe('Anger is up. Feel it, do not obey it.');
+    expect(t.prompt).toBe('name it out loud, one slow breath.');
 
-    const noQ = parseBearingText('Just a principle, no question.');
-    expect(noQ.principle).toBe('Just a principle, no question.');
-    expect(noQ.prompt).toBeNull();
+    const q = parseBearingText('Hold what is yours; let the rest go.\nQ: what is yours today?');
+    expect(q.principle).toBe('Hold what is yours; let the rest go.');
+    expect(q.prompt).toBe('what is yours today?');
+
+    const none = parseBearingText('Just a read, no technique.');
+    expect(none.principle).toBe('Just a read, no technique.');
+    expect(none.prompt).toBeNull();
   });
 
-  it('the generation system prompt bans the therapy/mindfulness vocabulary (VOICE.md)', () => {
-    expect(BEARING_SYSTEM.toLowerCase()).toContain('banned words');
-    expect(BEARING_SYSTEM.toLowerCase()).toContain('mindfulness');
+  it('the generation prompt carries the reframed voice: somatic, Try: contract, no em dashes', () => {
+    const lower = BEARING_SYSTEM.toLowerCase();
+    expect(lower).toContain('body'); // somatic framing from REISEI_VOICE
+    expect(lower).toContain('never use em dashes');
+    expect(BEARING_SYSTEM).toContain('Try:'); // output contract
   });
 });

@@ -63,7 +63,7 @@ export default function Today() {
           <Title style={{ marginTop: space.lg }}>Draw your line</Title>
         </View>
         <Card>
-          <Caption>One standard you hold under pressure. Breaking honestly beats going dark — report it, the crew respects the report.</Caption>
+          <Caption>One standard you hold yourself to. An honest slip beats going quiet, so log it. Your Corner respects the report.</Caption>
           <TextInput
             placeholder='e.g. "In bed by 23:00" · "No drinking"'
             placeholderTextColor={color.textSecondary}
@@ -88,14 +88,14 @@ export default function Today() {
   const verdict = state?.todayVerdict ?? null;
   const message =
     verdict === 'held'
-      ? 'Held. The line holds.'
+      ? 'Logged. You showed up today.'
       : verdict === 'broke'
-        ? 'Broke. Logged honestly — integrity stands.'
+        ? 'You logged it honestly. That counts.'
         : s && s.current > 0
-          ? `${s.current}-day hold. Keep it standing.`
+          ? `${s.current}-day streak. One day at a time.`
           : s && s.lastVerdict === 'broke'
-            ? 'Line broke last. Today it holds or it doesn’t. Log.'
-            : 'The line holds when you log it.';
+            ? 'It slipped last time. Today is a fresh read. Check in.'
+            : 'Check in when you are ready.';
 
   return (
     <Screen>
@@ -126,15 +126,15 @@ export default function Today() {
         {verdict === null ? (
           <>
             <TextInput
-              placeholder="Report for the day…"
+              placeholder="How did today actually go?"
               placeholderTextColor={color.textSecondary}
               value={note}
               onChangeText={setNote}
               maxLength={140}
               style={styles.input}
             />
-            <Button label="Hold the line" onPress={() => onLog('held')} loading={busy} />
-            <Button label="Report a break" variant="ghost" onPress={() => onLog('broke')} />
+            <Button label="Held it" onPress={() => onLog('held')} loading={busy} />
+            <Button label="It slipped" variant="ghost" onPress={() => onLog('broke')} />
           </>
         ) : (
           <Mono>{`LOGGED TODAY · ${verdict.toUpperCase()}`}</Mono>
@@ -174,7 +174,7 @@ export default function Today() {
           </Card>
         ))
       ) : (
-        <Caption>No crew yet. Join one, or go Pro to lead your own — you hold the line in front of people who know what you committed to.</Caption>
+        <Caption>No Corner yet. Join one, or go Pro to lead your own. You hold your line in front of people who know what you committed to.</Caption>
       )}
     </Screen>
   );
@@ -191,12 +191,12 @@ function KindChip({ label, active, onPress }: { label: string; active: boolean; 
 }
 
 function confirmBreak(): Promise<boolean> {
-  const msg = 'Log a break? The hold streak resets to zero. Integrity stands.';
+  const msg = 'Log a break? Your streak resets to zero. Your integrity count stays.';
   if (Platform.OS === 'web') return Promise.resolve(typeof window !== 'undefined' ? window.confirm(msg) : true);
   return new Promise((res) =>
-    Alert.alert('Report a break?', msg, [
+    Alert.alert('Log a break?', msg, [
       { text: 'Cancel', style: 'cancel', onPress: () => res(false) },
-      { text: 'Report break', style: 'destructive', onPress: () => res(true) },
+      { text: 'Log it', style: 'destructive', onPress: () => res(true) },
     ]),
   );
 }

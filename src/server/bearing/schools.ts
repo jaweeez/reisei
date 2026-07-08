@@ -115,8 +115,33 @@ function dayOfYearFromISO(iso: string): number {
   return Math.floor((Date.UTC(y, m - 1, d) - Date.UTC(y, 0, 0)) / 86_400_000);
 }
 
-/** The theme to ground today's bearing in — rotates through the school's themes by date. */
+/** The theme to ground today's bearing in. Rotates through the school's themes by date. */
 export function themeForToday(school: BearingSchool, localDate: string): string {
   if (!school.themes.length) return '';
   return school.themes[dayOfYearFromISO(localDate) % school.themes.length]!;
+}
+
+// Plain-language states men actually hit. This is the daily "what's coming up" angle the
+// bearing meets through the chosen tradition's lens (the emotional/somatic substance under
+// the discipline costume). Kept human and non-clinical on purpose (see docs/VOICE.md).
+export const DAILY_STATES: string[] = [
+  'anger flaring up',
+  'wired and restless',
+  'flat and hard to get going',
+  'resentment you keep chewing on',
+  'shame after a slip',
+  'grief or loss',
+  'an urge or craving pulling at you',
+  'overwhelmed, too much at once',
+  'numb and checked out',
+  'on edge, wound tight',
+  'fear about what is coming',
+  'lonely and disconnected',
+];
+
+/** The felt state to aim today's bearing at. Rotates by date, offset from the theme so the
+ *  state and the tradition angle vary independently across the year. */
+export function stateForToday(localDate: string): string {
+  if (!DAILY_STATES.length) return '';
+  return DAILY_STATES[(dayOfYearFromISO(localDate) + 5) % DAILY_STATES.length]!;
 }

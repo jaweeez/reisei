@@ -1,13 +1,14 @@
-import { Redirect } from 'expo-router';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, TextInput, View } from 'react-native';
-import { Body, Button, Eyebrow, Hero, Screen, Text, VialMark } from '@/components';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Body, Button, Eyebrow, Hero, Mono, Screen, Text, VialMark } from '@/components';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { color, radius, space } from '@/theme';
 
 export default function SignIn() {
   const { status, register, login } = useAuth();
-  const [mode, setMode] = useState<'login' | 'register'>('register');
+  const params = useLocalSearchParams<{ mode?: string }>();
+  const [mode, setMode] = useState<'login' | 'register'>(params.mode === 'login' ? 'login' : 'register');
   const [username, setUsername] = useState('');
   const [pin, setPin] = useState('');
   const [name, setName] = useState('');
@@ -26,6 +27,14 @@ export default function SignIn() {
 
   return (
     <Screen>
+      <Pressable
+        style={styles.back}
+        hitSlop={12}
+        onPress={() => (router.canGoBack() ? router.back() : router.push('/landing'))}
+      >
+        <Mono>← Back</Mono>
+      </Pressable>
+
       <View style={styles.head}>
         <VialMark width={180} />
         <Hero style={{ marginTop: space.xl }}>Reisei</Hero>
@@ -60,6 +69,7 @@ function Field(props: React.ComponentProps<typeof TextInput>) {
 }
 
 const styles = StyleSheet.create({
+  back: { alignSelf: 'flex-start' },
   head: { alignItems: 'center', marginTop: space.section },
   form: { gap: space.md, marginTop: space.section },
   input: {

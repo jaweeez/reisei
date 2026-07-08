@@ -28,6 +28,7 @@ export default function RootLayout() {
           <View style={{ flex: 1, backgroundColor: color.bg }}>
             <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: color.bg } }}>
               <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="landing" />
               <Stack.Screen name="sign-in" />
               <Stack.Screen name="paywall" options={{ presentation: 'modal' }} />
               <Stack.Screen name="ledger" options={{ presentation: 'modal' }} />
