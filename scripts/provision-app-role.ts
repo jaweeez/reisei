@@ -3,7 +3,7 @@ config({ path: '.env.local' });
 config({ path: '.env' });
 import { randomBytes } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { adminPool } from '../src/server/db';
+import { directPool } from '../src/server/db';
 
 // Provisions a RESTRICTED application role (reisei_app: LOGIN, NOBYPASSRLS) so RLS
 // actually enforces at request time — the owner role has BYPASSRLS and would skip
@@ -12,12 +12,13 @@ import { adminPool } from '../src/server/db';
 const APP_ROLE = 'reisei_app';
 
 async function main() {
-  if (!process.env.DATABASE_URL) {
-    console.error('DATABASE_URL is not set. Add it to .env.local first.');
+  const conn = process.env.DIRECT_DATABASE_URL || process.env.DATABASE_URL;
+  if (!conn) {
+    console.error('DIRECT_DATABASE_URL (or DATABASE_URL) is not set. Add it to .env.local first.');
     process.exit(1);
   }
   const password = randomBytes(24).toString('hex');
-  const p = adminPool();
+  const p = directPool();
 
   await p.query(`do $$ begin
     if not exists (select 1 from pg_roles where rolname = '${APP_ROLE}') then
@@ -33,7 +34,7 @@ async function main() {
   await p.query(`alter default privileges in schema public grant select, insert, update, delete on tables to ${APP_ROLE}`);
   await p.query(`alter default privileges in schema public grant execute on functions to ${APP_ROLE}`);
 
-  const u = new URL(process.env.DATABASE_URL);
+  const u = new URL(conn);
   u.username = APP_ROLE;
   u.password = password;
   const appUrl = u.toString();
@@ -49,7 +50,8 @@ async function main() {
 
   await p.end();
   console.log(`✓ Provisioned role "${APP_ROLE}" (LOGIN, NOBYPASSRLS) + grants.`);
-  console.log(`✓ Wrote APP_DATABASE_URL to ${envPath} (value hidden). Copy that line into Vercel env too.`);
+  console.log(`✓ Wrote APP_DATABASE_URL to ${envPath} (value hidden, DIRECT host — right for local dev).`);
+  console.log(`  For Vercel, use the same URL but with the "-pooler" host (runtime is serverless).`);
 }
 
 main().catch((e) => {

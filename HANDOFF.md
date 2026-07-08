@@ -41,10 +41,14 @@ Stripe (web) + RevenueCat (mobile IAP) → one entitlement.
 
 ## Database (Neon)
 
-Migrations `0001`–`0009` are **all applied**. Two roles wired + verified:
-- `neondb_owner` (via `DATABASE_URL`) — owner, BYPASSRLS. Migrations, ingest, webhooks, cron.
-- `reisei_app` (via `APP_DATABASE_URL`) — restricted, NOBYPASSRLS. All request-time queries
-  run under `withUser()` which sets `app.current_user_id` so RLS enforces.
+Migrations `0001`–`0009` are **all applied**. Two roles × two pooling lanes (`src/server/db.ts`):
+- `pool()` → `APP_DATABASE_URL` — restricted `reisei_app` role, NOBYPASSRLS. All request-time
+  queries run under `withUser()` (transaction-scoped `app.current_user_id`) so RLS enforces. **Pooled.**
+- `adminPool()` → `DATABASE_URL` — owner role, BYPASSRLS, at RUNTIME: auth reads, entitlement,
+  billing, webhooks, cron. **Pooled in prod** (called per-request).
+- `directPool()` → `DIRECT_DATABASE_URL` — owner role, **DIRECT (non-pooler) host**, CLI only:
+  migrations / `db:provision` / `ingest`. PgBouncer can't run DDL-in-txn or hold advisory locks.
+  Falls back to `DATABASE_URL` when unset (local dev, where it's already direct).
 
 Tables: `users`, `sessions`, `lines`, `check_ins`, `streaks`, `line_events`, `crews`,
 `crew_members`, `crew_invites`, `crew_acks`, `nudges`, `practices`, `subscriptions`,
@@ -53,14 +57,16 @@ founder's own test account) — don't wipe it.
 
 ## Env & accounts (`.env.local`, gitignored)
 
-**Real / working:** `DATABASE_URL`, `APP_DATABASE_URL` (Neon), `ANTHROPIC_API_KEY`,
-`VOYAGE_API_KEY`, `TAVILY_API_KEY` (pulled from Enso), `AUTH_SESSION_SECRET`, domain
-`reiseiapp.com`.
+**Real / working:** `DATABASE_URL`, `APP_DATABASE_URL`, `DIRECT_DATABASE_URL` (Neon),
+`ANTHROPIC_API_KEY`, `VOYAGE_API_KEY`, `TAVILY_API_KEY` (pulled from Enso), `AUTH_SESSION_SECRET`,
+`CRON_SECRET`, `CHAT_MODEL`, `WEBAUTHN_*`, domain `reiseiapp.com`.
 
 **Still placeholders (need real values):** `STRIPE_*` (secret, webhook, price ids),
-`EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `REVENUECAT_*`, `AWS_*` + `SES_*` + `CLOUDFRONT_*` +
-`REISEI_AWS_S3_BUCKET`, `APPSYNC_*`, `UPSTASH_*`, `INNGEST_*`, `SENTRY_*`, `CRON_SECRET`,
-`EXPO_ACCESS_TOKEN`, and the EAS `projectId` in `app.json`.
+`EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `REVENUECAT_*`, `AWS_*` + `SES_*` + `CLOUDFRONT_*`,
+`APPSYNC_*`, `UPSTASH_*`, `INNGEST_*`, `SENTRY_*`, `EXPO_ACCESS_TOKEN`. (EAS `projectId`
+in `app.json` is now set: `67619966-…305b`.) Note: `UPSTASH_*`, `INNGEST_*`, `SENTRY_*`,
+`CLOUDFRONT_*`, `AWS_ACCESS_KEY`, `SES_*` are **not referenced by any code yet** — template
+scaffolding; don't provision until you build the feature.
 
 > AWS/SES creds can be pulled from `../Enso/ens-/.env.local` the same way the AI keys were
 > (same AWS account). Reisei's SES sender is `noreply@reiseiapp.com` (verify that domain).
@@ -84,14 +90,16 @@ Docs: `README.md`, `docs/VOICE.md` (read first), `docs/STRIPE.md`, `docs/CORPUS.
 
 ## Outstanding work (rough priority)
 
-1. **Ship to a real device / TestFlight.** Set EAS `projectId`, add app icons/splash, run an
-   EAS build. This unblocks real push delivery + IAP testing.
+1. **Ship to a real device / TestFlight.** EAS `projectId` is set; add app icons/splash, run an
+   EAS build. This unblocks real push delivery + IAP testing. (EAS env: only the 3 `EXPO_PUBLIC_*`
+   are needed — the app calls the API, it holds no secrets.)
 2. **Go live on billing.** `npm run setup:stripe`; set up the Stripe webhook →
    `STRIPE_WEBHOOK_SECRET`; create RevenueCat products (needs App Store Connect / Play Console)
    and set the RC keys.
-3. **Deploy to Vercel.** Add domain `reiseiapp.com`; copy every server env var into the Vercel
-   project; **switch both DB URLs to the Neon `-pooler` host** for serverless; set `CRON_SECRET`
-   (the hourly `/api/coach/tick` cron is already in `vercel.json`).
+3. **Deploy to Vercel.** Add domain `reiseiapp.com`; copy the server env vars into the project.
+   **Runtime URLs (`DATABASE_URL`, `APP_DATABASE_URL`) must use the Neon `-pooler` host**; do NOT
+   pool `DIRECT_DATABASE_URL` and don't set it on Vercel (migrations run from the CLI, not on
+   Vercel). `CRON_SECRET` is set (the hourly `/api/coach/tick` cron is already in `vercel.json`).
 4. **P10 — The Unit:** crew shared standard, captain's daily report, shared-fate math (spec in
    the product design; see memory / the "Hold the Line" workflow output).
 5. **Escalation ladder** (each an evidence-based practice in costume — `practices` table + kind

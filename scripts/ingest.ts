@@ -4,7 +4,7 @@ config({ path: '.env.local' });
 config({ path: '.env' });
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
-import { adminPool as pool } from '../src/server/db';
+import { directPool as pool } from '../src/server/db';
 import { teachingsToChunks } from '../src/server/corpus';
 import { generateEmbeddings, embedDocuments, toVectorLiteral } from '../src/server/ai/voyage';
 import { crawlSite, extractPages, type ScrapedPage } from '../src/server/ai/scrape';
@@ -36,8 +36,8 @@ async function scrapeSource(s: Source): Promise<ScrapedPage[]> {
 }
 
 async function main() {
-  if (!process.env.DATABASE_URL) {
-    console.error('DATABASE_URL is not set.');
+  if (!process.env.DIRECT_DATABASE_URL && !process.env.DATABASE_URL) {
+    console.error('DIRECT_DATABASE_URL (or DATABASE_URL) is not set.');
     process.exit(1);
   }
   if (!process.env.VOYAGE_API_KEY && !process.env.VOYAGE_AI_API_KEY) {

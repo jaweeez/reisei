@@ -3,13 +3,14 @@ import { config } from 'dotenv';
 config({ path: '.env.local' });
 config({ path: '.env' });
 import { readdirSync, readFileSync } from 'node:fs';
-import { adminPool as pool } from '../src/server/db';
+import { directPool as pool } from '../src/server/db';
 
 // Applies db/migrations/*.sql in order, tracked in a _migrations table so it's
-// idempotent. Owner role only (DDL).
+// idempotent. Uses the DIRECT owner connection — migrations run DDL and hold advisory
+// locks, which Neon's PgBouncer pooler doesn't support. NEVER point this at a -pooler host.
 async function main() {
-  if (!process.env.DATABASE_URL) {
-    console.error('DATABASE_URL is not set. Add it to .env.local first.');
+  if (!process.env.DIRECT_DATABASE_URL && !process.env.DATABASE_URL) {
+    console.error('DIRECT_DATABASE_URL (or DATABASE_URL) is not set. Add it to .env.local first.');
     process.exit(1);
   }
   const p = pool();

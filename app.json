@@ -20,7 +20,9 @@
       "versionCode": 1,
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "permissions": ["android.permission.POST_NOTIFICATIONS"]
+      "permissions": [
+        "android.permission.POST_NOTIFICATIONS"
+      ]
     },
     "web": {
       "output": "server",
@@ -29,8 +31,19 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      ["expo-splash-screen", { "backgroundColor": "#1B1918", "imageWidth": 200 }],
-      ["expo-notifications", { "color": "#B8863E" }]
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#1B1918",
+          "imageWidth": 200
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#B8863E"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
@@ -39,7 +52,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "REPLACE_WITH_EAS_PROJECT_ID"
+        "projectId": "67619966-efbf-4b52-90a2-849bd570305b"
       }
     },
     "owner": "mu-works-llc"

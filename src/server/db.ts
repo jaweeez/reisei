@@ -5,12 +5,18 @@ import { Pool, type PoolClient } from 'pg';
 // can take a few seconds). Only ever imported by API routes (*+api.ts) and CLI
 // scripts, so it never reaches the native/client bundle.
 //
-// TWO roles, on purpose:
-//   • pool()      — the RESTRICTED app role (APP_DATABASE_URL, NOBYPASSRLS). All
-//                   request-time queries use it, so RLS actually enforces crew scope.
-//   • adminPool() — the OWNER role (DATABASE_URL). DDL, migrations, seeding, webhooks.
+// Two roles × two pooling lanes, on purpose:
+//   • pool()       — RESTRICTED app role (APP_DATABASE_URL, NOBYPASSRLS). Every
+//                    request-time query uses it, so RLS enforces crew scope. POOLED.
+//   • adminPool()  — OWNER role (DATABASE_URL) at RUNTIME: auth reads, entitlement
+//                    checks, billing, webhooks, cron. BYPASSRLS. Also POOLED in prod.
+//   • directPool() — OWNER role (DIRECT_DATABASE_URL), CLI only: migrations, role
+//                    provisioning, batch ingest. DDL-in-a-transaction and the session
+//                    advisory locks a migration runner needs DON'T work through Neon's
+//                    PgBouncer pooler, so this must hit the DIRECT (non-`-pooler`) host.
 let _pool: Pool | null = null;
 let _adminPool: Pool | null = null;
+let _directPool: Pool | null = null;
 let _warnedOwnerFallback = false;
 
 function makePool(connStr: string): Pool {
@@ -51,11 +57,30 @@ export function pool(): Pool {
   return _pool;
 }
 
-/** The ADMIN (owner) pool — for migrations, DDL, seeding, and webhook writes only. */
+/**
+ * The ADMIN (owner) pool — the BYPASSRLS owner role at RUNTIME: auth reads, entitlement
+ * checks, billing, webhook writes, and the coach cron. Pooled in prod (it's called
+ * per-request). NOT for migrations/DDL — use directPool() so it never rides the pooler.
+ */
 export function adminPool(): Pool {
   if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is not set');
   if (!_adminPool) _adminPool = makePool(process.env.DATABASE_URL);
   return _adminPool;
+}
+
+/**
+ * The DIRECT (unpooled) owner pool — CLI only: migrations, role provisioning, batch
+ * ingest. Neon's transaction pooler (PgBouncer) can't run DDL inside a transaction or
+ * hold the session-level advisory locks a migration runner relies on, so these MUST use
+ * the direct (`.neon.tech`, no `-pooler`) host. Falls back to DATABASE_URL when
+ * DIRECT_DATABASE_URL is unset — e.g. local dev, where DATABASE_URL is already direct.
+ * The serverless runtime never calls this.
+ */
+export function directPool(): Pool {
+  const conn = process.env.DIRECT_DATABASE_URL || process.env.DATABASE_URL;
+  if (!conn) throw new Error('DIRECT_DATABASE_URL / DATABASE_URL is not set');
+  if (!_directPool) _directPool = makePool(conn);
+  return _directPool;
 }
 
 /**
