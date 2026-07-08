@@ -10,11 +10,11 @@ function TabGlyph({ glyph, focused }: { glyph: string; focused: boolean }) {
 }
 
 export default function TabsLayout() {
-  const { status, user } = useAuth();
+  const { status } = useAuth();
   if (status === 'loading') return null;
   if (status === 'guest') return <Redirect href="/landing" />;
-  // New accounts (email_required) must verify their email before using the app.
-  if (user && user.emailRequired && !user.emailVerified) return <Redirect href="/verify-email" />;
+  // Email is optional and no longer gates the app (deliverability is being sorted separately).
+  // To re-gate later, restore a redirect to /verify-email for emailRequired && !emailVerified.
 
   return (
     <Tabs
@@ -33,6 +33,10 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="crew"
         options={{ title: 'CORNER', tabBarIcon: ({ focused }) => <TabGlyph glyph="●" focused={focused} /> }}
+      />
+      <Tabs.Screen
+        name="log"
+        options={{ title: 'LOG', tabBarIcon: ({ focused }) => <TabGlyph glyph="✎" focused={focused} /> }}
       />
       <Tabs.Screen
         name="settings"

@@ -4,6 +4,8 @@ import type {
   BearingHistory,
   BearingResponse,
   HomeState,
+  JournalFeed,
+  JournalLogged,
   LineKind,
   LineView,
   SchoolView,
@@ -110,5 +112,19 @@ export async function logBearing(bearingId: string, note: string): Promise<boole
 /** The user's private log archive (free = last 30 days; Pro = everything). */
 export async function fetchBearingHistory(): Promise<BearingHistory | null> {
   const res = await api<BearingHistory>('/api/bearing/history');
+  return res.ok ? res.data : null;
+}
+
+// --- The log: a private, free-form journal ---
+
+/** The user's private log feed (free = last 30 days; Pro = everything). */
+export async function fetchJournal(): Promise<JournalFeed | null> {
+  const res = await api<JournalFeed>('/api/journal');
+  return res.ok ? res.data : null;
+}
+
+/** Append a private log entry. Returns the saved entry and whether to surface an off-ramp. */
+export async function logJournal(body: string): Promise<JournalLogged | null> {
+  const res = await api<JournalLogged>('/api/journal', { method: 'POST', body: JSON.stringify({ body }) });
   return res.ok ? res.data : null;
 }

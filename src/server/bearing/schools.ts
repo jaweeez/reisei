@@ -228,6 +228,12 @@ export function quoteForToday(school: BearingSchool, localDate: string): Bearing
   return qs[dayOfYearFromISO(localDate) % qs.length] ?? null;
 }
 
+/** All curated public-domain quotes for a school (empty for an un-sourced school). Used to
+ *  score the day's anchor against a user's struggle signal (src/server/bearing/vectors.ts). */
+export function schoolQuotes(ideology: string): BearingQuote[] {
+  return SCHOOL_QUOTES[ideology as Ideology] ?? [];
+}
+
 // Plain-language states men actually hit. This is the daily "what's coming up" angle the
 // bearing meets through the chosen tradition's lens (the emotional/somatic substance under
 // the discipline costume). Kept human and non-clinical on purpose (see docs/VOICE.md).

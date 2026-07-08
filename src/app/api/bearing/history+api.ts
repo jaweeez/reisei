@@ -18,8 +18,10 @@ export async function GET(req: Request) {
     const windowed = !ent.premium;
     const logs = (
       await c.query(
-        `select to_char(bl.local_date, 'YYYY-MM-DD') as date, bl.ideology, bl.note, b.principle
+        `select to_char(bl.local_date, 'YYYY-MM-DD') as date, bl.ideology, bl.note,
+                coalesce(ub.principle, b.principle) as principle
            from bearing_logs bl
+           left join user_bearings ub on ub.id = bl.user_bearing_id
            left join bearings b on b.id = bl.bearing_id
           where bl.user_id = current_app_user()
             ${windowed ? `and bl.local_date >= current_date - interval '30 days'` : ''}

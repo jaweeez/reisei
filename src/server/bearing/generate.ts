@@ -2,8 +2,15 @@ import { generateText } from 'ai';
 import { anthropic, CHAT_MODEL, chatEnabled } from '@/server/ai/anthropic';
 import { searchTeachings } from '@/server/ai/vector';
 import type { BearingSource } from '@/lib/data/types';
-import { getSchool, quoteForToday, stateForToday, themeForToday } from './schools';
+import { type BearingQuote, getSchool, quoteForToday, stateForToday, themeForToday } from './schools';
 import { BEARING_SYSTEM, buildBearingPrompt, deDash, parseBearingText, pickSource, splitTeachingContent } from './compose';
+
+/** Optional per-user steer: build the read around a specific quote + felt-state instead of the
+ *  shared date rotation. Omitted ⇒ generateBearing behaves exactly as the neutral daily path. */
+export interface BearingSteer {
+  quote?: BearingQuote | null;
+  state?: string;
+}
 
 // Generate "the bearing" for a school on a given local date: retrieve grounding from the
 // coach corpus (searchTeachings — vector when Voyage is configured, else keyword fallback),
@@ -21,13 +28,15 @@ export interface GeneratedBearing {
   model: string;
 }
 
-export async function generateBearing(ideology: string, localDate: string): Promise<GeneratedBearing> {
+export async function generateBearing(ideology: string, localDate: string, steer?: BearingSteer): Promise<GeneratedBearing> {
   const school = getSchool(ideology);
   if (!school) throw new Error(`unknown school: ${ideology}`);
 
   const theme = themeForToday(school, localDate);
-  const state = stateForToday(localDate);
-  const quote = quoteForToday(school, localDate);
+  // A steer aims the read at the user's live struggle; absent it, the shared date rotation. The
+  // state also seeds retrieval, so steering it pulls corpus teachings that speak to the struggle.
+  const state = steer?.state ?? stateForToday(localDate);
+  const quote = steer?.quote ?? quoteForToday(school, localDate);
   const retrieved = await searchTeachings(`${theme} ${state}`.trim() || school.label, ideology, 5);
   // Prefer the day's quote as the link-out (its exact passage); else the school's canonical source.
   const source = quote ? { url: quote.url, title: quote.ref, attribution: school.source.attribution } : pickSource(retrieved, school);

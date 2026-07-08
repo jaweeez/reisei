@@ -178,3 +178,26 @@ export interface BearingHistory {
   logs: BearingLogItem[];
   upsell: boolean;
 }
+
+// --- The log: a private, free-form journal ---
+
+/** One entry in the user's private log. */
+export interface JournalEntry {
+  id: string;
+  /** Local calendar date (YYYY-MM-DD). */
+  date: string;
+  body: string;
+}
+
+/** GET /api/journal — the log feed. `upsell` when older entries are gated (free = 30 days). */
+export interface JournalFeed {
+  entries: JournalEntry[];
+  upsell: boolean;
+}
+
+/** POST /api/journal result. `offramp` is true when the entry read like a genuinely hard
+ *  place — the log surfaces a real resource instead of coaching it (see docs/VOICE.md). */
+export interface JournalLogged {
+  entry: JournalEntry;
+  offramp: boolean;
+}

@@ -39,5 +39,18 @@ export async function sendCodeEmail(to: string, code: string, purpose: 'verify_e
   const subject = purpose === 'pin_reset' ? 'Your Reisei reset code' : 'Verify your Reisei email';
   const line = purpose === 'pin_reset' ? 'Use this code to set a new PIN.' : 'Use this code to verify your email.';
   const text = `${line}\n\n${code}\n\nThis code expires in 10 minutes. If this was not you, ignore this email.`;
-  await sendEmail({ to, subject, text });
+  try {
+    await sendEmail({ to, subject, text });
+  } catch (e) {
+    // A send can throw (bad address, SES suppression list, throttling, an auth/config issue).
+    // Outside production, don't strand onboarding: log the code so it's recoverable from the
+    // server logs. Never do this in production (codes must not be logged there).
+    // NOTE: a spam-foldered email does NOT throw here (SES accepts it). If codes go missing but
+    // nothing logs here, it is delivery-side (spam folder, the SES suppression list, or SPF/DMARC
+    // tuning), not a code fix.
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn(`[email] send to ${to} failed (${e instanceof Error ? e.message : e}). ${purpose} CODE: ${code}`);
+    }
+    throw e;
+  }
 }

@@ -1,13 +1,15 @@
 import { currentUser } from '@/server/auth/session';
-import { adminPool, withUser } from '@/server/db';
+import { withUser } from '@/server/db';
 import { localDateFor } from '@/server/streak';
-import { getOrCreateBearing } from '@/server/bearing/store';
+import { resolveUserBearing } from '@/server/bearing/resolve';
 import { getSchool, SCHOOLS } from '@/server/bearing/schools';
 import type { BearingResponse, BearingView, SchoolView } from '@/lib/data/types';
 
-// GET  /api/bearing → the school picker (all schools + followed flag) plus today's bearing
-//                     for each followed school (generated + cached on first request).
+// GET  /api/bearing → the school picker (all schools + followed flag) plus today's bearing for
+//                     each followed school, resolved per user (built around a live struggle when
+//                     there is one, else the shared date-rotated bearing) and cached for the day.
 // POST /api/bearing { bearingId, note } → log a PRIVATE response (never shown to the crew).
+//                     `bearingId` is the user_bearings row the reader is responding to.
 
 export async function GET(req: Request) {
   const userId = await currentUser(req);
@@ -22,17 +24,18 @@ export async function GET(req: Request) {
   const localDate = localDateFor(tz);
   const followedSet = new Set(followed);
 
-  // One shared row per (school, day) — generated on first request, cached thereafter.
-  const stored = await Promise.all(followed.map((id) => getOrCreateBearing(id, localDate).catch(() => null)));
+  // Resolve each followed school's Bearing for this user (per-user when a struggle is live,
+  // else a copy of the shared neutral bearing). Cached in user_bearings after the first resolve.
+  const stored = await Promise.all(followed.map((id) => resolveUserBearing(userId, id, localDate).catch(() => null)));
   const bearings = stored.filter((b): b is NonNullable<typeof b> => b !== null);
 
   const loggedIds = await withUser(userId, async (c) => {
     const rows = (await c.query(
-      `select distinct bearing_id from bearing_logs
-        where user_id = current_app_user() and local_date = $1 and bearing_id is not null`,
+      `select distinct user_bearing_id from bearing_logs
+        where user_id = current_app_user() and local_date = $1 and user_bearing_id is not null`,
       [localDate],
     )).rows;
-    return new Set(rows.map((r) => r.bearing_id as string));
+    return new Set(rows.map((r) => r.user_bearing_id as string));
   });
 
   const today: BearingView[] = bearings.map((b) => {
@@ -76,15 +79,21 @@ export async function POST(req: Request) {
   if (!bearingId) return Response.json({ error: 'bearingId required' }, { status: 400 });
   if (!note) return Response.json({ error: 'Write something to log.' }, { status: 400 });
 
-  // The bearing's school + date (owner role — `bearings` has no RLS).
-  const meta = (
-    await adminPool().query(`select ideology, to_char(local_date, 'YYYY-MM-DD') as local_date from bearings where id = $1`, [bearingId])
-  ).rows[0] as { ideology: string; local_date: string } | undefined;
+  // The response points at the user's resolved bearing (RLS scopes the lookup to the owner).
+  const meta = await withUser(userId, async (c) =>
+    (
+      await c.query(
+        `select ideology, to_char(local_date, 'YYYY-MM-DD') as local_date
+           from user_bearings where id = $1 and user_id = current_app_user()`,
+        [bearingId],
+      )
+    ).rows[0] as { ideology: string; local_date: string } | undefined,
+  );
   if (!meta) return Response.json({ error: 'unknown bearing' }, { status: 404 });
 
   await withUser(userId, async (c) => {
     await c.query(
-      `insert into bearing_logs (user_id, bearing_id, ideology, local_date, note)
+      `insert into bearing_logs (user_id, user_bearing_id, ideology, local_date, note)
        values (current_app_user(), $1, $2, $3, $4)`,
       [bearingId, meta.ideology, meta.local_date, note],
     );

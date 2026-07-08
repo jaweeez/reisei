@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
-import { Body, Button, Caption, Card, Eyebrow, Mono, Screen, Text, Title } from '@/components';
+import { Body, Button, Caption, Card, CrisisCard, Eyebrow, Mono, Screen, Text, Title } from '@/components';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { billingApi } from '@/lib/billing/client';
 import { iapEnabled, restore } from '@/lib/billing/iap';
@@ -110,6 +110,8 @@ export default function Settings() {
           ))}
         </View>
       </Card>
+
+      <CrisisCard />
 
       <Card>
         <Eyebrow>Session</Eyebrow>

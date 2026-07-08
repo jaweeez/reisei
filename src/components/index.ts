@@ -4,3 +4,4 @@ export { Button } from './Button';
 export { Card } from './Card';
 export { VialMark } from './VialMark';
 export { CrewDots } from './CrewDots';
+export { CrisisCard } from './CrisisCard';

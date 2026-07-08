@@ -33,12 +33,14 @@ export async function GET(req: Request) {
       c.query(`select from_user_id, to_user_id from crew_acks where local_date = $1`, [today]),
       c.query(`select body from nudges where user_id = current_app_user() and local_date = $1 order by sent_at desc limit 1`, [today]),
       c.query(`select 1 from practices where user_id = current_app_user() and kind = 'reset' and local_date = $1 limit 1`, [today]),
-      // The primary followed school (by sort) + today's bearing for it, if already generated.
+      // The primary followed school (by sort) + this user's resolved bearing for it, if the
+      // Bearing screen has been opened today (else principle is null → the "open it" prompt).
       c.query(
-        `select us.ideology, b.principle,
-                exists(select 1 from bearing_logs bl where bl.user_id = current_app_user() and bl.bearing_id = b.id) as logged
+        `select us.ideology, ub.principle,
+                exists(select 1 from bearing_logs bl where bl.user_id = current_app_user() and bl.user_bearing_id = ub.id) as logged
            from user_schools us
-           left join bearings b on b.ideology = us.ideology and b.local_date = $1
+           left join user_bearings ub
+             on ub.user_id = current_app_user() and ub.ideology = us.ideology and ub.local_date = $1
           where us.user_id = current_app_user()
           order by us.sort, us.created_at
           limit 1`,

@@ -150,6 +150,13 @@ export default function Today() {
         )}
       </Card>
 
+      {verdict === 'broke' && (
+        <Pressable style={styles.logNudge} onPress={() => router.push('/log')}>
+          <Mono color={color.actionText}>The log</Mono>
+          <Body color={color.textPrimary}>Rough one today. Put words to it. Private, just for you.</Body>
+        </Pressable>
+      )}
+
       {state && (
         <Pressable style={styles.bearing} onPress={() => router.push('/bearing')}>
           <Mono color={color.actionText}>Today's bearing</Mono>
@@ -214,6 +221,7 @@ const styles = StyleSheet.create({
   head: { alignItems: 'center', marginTop: space.section },
   banner: { gap: space.xs, padding: space.lg, borderRadius: radius.md, borderLeftWidth: 3, borderLeftColor: color.action, backgroundColor: color.actionSoft },
   bearing: { gap: space.xs, padding: space.lg, borderRadius: radius.md, borderWidth: 1, borderColor: color.rule, backgroundColor: color.card },
+  logNudge: { gap: space.xs, padding: space.lg, borderRadius: radius.md, borderLeftWidth: 3, borderLeftColor: color.action, backgroundColor: color.actionSoft },
   mark: { alignItems: 'center', paddingVertical: space.md },
   crewHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   input: {

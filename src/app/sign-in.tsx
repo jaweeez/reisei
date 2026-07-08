@@ -46,7 +46,7 @@ export default function SignIn() {
         {mode === 'register' && (
           <>
             <Field placeholder="Name" value={name} onChangeText={setName} autoCapitalize="words" />
-            <Field placeholder="Email" value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" />
+            <Field placeholder="Email (optional, for recovery)" value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" />
           </>
         )}
         <Field placeholder="Username" value={username} onChangeText={setUsername} autoCapitalize="none" />
