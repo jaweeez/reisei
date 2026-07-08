@@ -43,6 +43,7 @@ export async function GET(req: Request) {
       label: school.label,
       principle: b.principle,
       prompt: b.prompt,
+      quote: b.quote,
       source: b.source,
       copyright: school.copyright,
       loggedToday: loggedIds.has(b.id),

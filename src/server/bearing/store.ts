@@ -14,15 +14,18 @@ export interface StoredBearing {
   principle: string;
   prompt: string | null;
   source: BearingSource;
+  /** The day's anchoring quote (text + citation), or null. */
+  quote: { text: string; ref: string } | null;
   model: string | null;
 }
 
 const COLS = `id, ideology, to_char(local_date, 'YYYY-MM-DD') as local_date,
-              principle, prompt, source_url, source_title, source_attribution, model`;
+              principle, prompt, source_url, source_title, source_attribution, quote_text, quote_ref, model`;
 
 function mapRow(r: {
   id: string; ideology: string; local_date: string; principle: string; prompt: string | null;
-  source_url: string; source_title: string; source_attribution: string; model: string | null;
+  source_url: string; source_title: string; source_attribution: string;
+  quote_text: string | null; quote_ref: string | null; model: string | null;
 }): StoredBearing {
   return {
     id: r.id,
@@ -31,6 +34,7 @@ function mapRow(r: {
     principle: r.principle,
     prompt: r.prompt,
     source: { url: r.source_url, title: r.source_title, attribution: r.source_attribution },
+    quote: r.quote_text ? { text: r.quote_text, ref: r.quote_ref ?? '' } : null,
     model: r.model ?? null,
   };
 }
@@ -47,11 +51,11 @@ export async function getOrCreateBearing(ideology: string, localDate: string): P
 
   const gen = await generateBearing(ideology, localDate);
   const { rows } = await adminPool().query(
-    `insert into bearings (ideology, local_date, principle, prompt, source_url, source_title, source_attribution, grounding, model)
-     values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9)
+    `insert into bearings (ideology, local_date, principle, prompt, source_url, source_title, source_attribution, quote_text, quote_ref, grounding, model)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11)
      on conflict (ideology, local_date) do nothing
      returning ${COLS}`,
-    [ideology, localDate, gen.principle, gen.prompt, gen.source.url, gen.source.title, gen.source.attribution, JSON.stringify(gen.grounding), gen.model],
+    [ideology, localDate, gen.principle, gen.prompt, gen.source.url, gen.source.title, gen.source.attribution, gen.quote?.text ?? null, gen.quote?.ref ?? null, JSON.stringify(gen.grounding), gen.model],
   );
   if (rows[0]) return mapRow(rows[0]);
 

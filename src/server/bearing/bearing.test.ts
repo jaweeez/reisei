@@ -1,7 +1,7 @@
 /// <reference types="jest" />
 import type { RetrievedTeaching } from '@/server/ai/vector';
-import { DAILY_STATES, getSchool, isSchoolId, SCHOOL_IDS, SCHOOLS, stateForToday, themeForToday } from './schools';
-import { BEARING_SYSTEM, parseBearingText, pickSource, splitTeachingContent } from './compose';
+import { DAILY_STATES, getSchool, isSchoolId, quoteForToday, SCHOOL_IDS, SCHOOLS, stateForToday, themeForToday } from './schools';
+import { BEARING_SYSTEM, buildBearingPrompt, parseBearingText, pickSource, splitTeachingContent } from './compose';
 
 const chunk = (over: Partial<RetrievedTeaching> = {}): RetrievedTeaching => ({
   ref_id: 't1', title: 'A teaching', url: null, ideology: 'stoicism', theme: 'control', content: 'x', similarity: 0, ...over,
@@ -77,8 +77,50 @@ describe('stateForToday', () => {
   });
 });
 
+describe('school quotes', () => {
+  it('every school has a verified quote today: non-empty text + ref, and an https url', () => {
+    for (const s of SCHOOLS) {
+      const q = quoteForToday(s, '2026-07-08');
+      expect(q).not.toBeNull();
+      expect(q!.text.length).toBeGreaterThan(0);
+      expect(q!.ref.length).toBeGreaterThan(0);
+      expect(q!.url).toMatch(/^https:\/\//);
+    }
+  });
+
+  it('quoteForToday is deterministic for a date and rotates across the year', () => {
+    const sto = getSchool('stoicism')!;
+    expect(quoteForToday(sto, '2026-07-08')).toEqual(quoteForToday(sto, '2026-07-08'));
+    const seen = new Set(
+      Array.from({ length: 40 }, (_, i) =>
+        quoteForToday(sto, `2026-${String((i % 12) + 1).padStart(2, '0')}-${String((i % 28) + 1).padStart(2, '0')}`)?.ref,
+      ),
+    );
+    expect(seen.size).toBeGreaterThan(1);
+  });
+
+  it('no quote reproduces copyrighted-translation phrasings we deliberately avoided', () => {
+    const all = SCHOOLS.flatMap((s) => Array.from({ length: 12 }, (_, i) => quoteForToday(s, `2026-${String(i + 1).padStart(2, '0')}-15`)?.text ?? ''));
+    const joined = all.join(' | ').toLowerCase();
+    // Frankl paraphrase and the misattributed William James line were explicitly excluded.
+    expect(joined).not.toContain('a why to live');
+    expect(joined).not.toContain('altering his attitudes');
+  });
+});
+
 describe('compose', () => {
   const sto = getSchool('stoicism')!;
+
+  it('buildBearingPrompt embeds today\'s quote and state, and degrades cleanly with no quote', () => {
+    const q = quoteForToday(sto, '2026-07-08')!;
+    const withQuote = buildBearingPrompt(sto, q, 'anger flaring up', []);
+    expect(withQuote).toContain(q.text);
+    expect(withQuote).toContain('anger flaring up');
+    const noQuote = buildBearingPrompt(sto, null, 'fear about what is coming', []);
+    expect(noQuote).toContain('fear about what is coming');
+    expect(noQuote).not.toContain('undefined');
+    expect(noQuote).not.toContain('null');
+  });
 
   it('pickSource prefers a retrieved url of the same school, else the canonical source', () => {
     const withUrl = pickSource([chunk({ url: 'https://example.org/x', ideology: 'stoicism', title: 'Chunk' })], sto);

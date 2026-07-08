@@ -98,13 +98,19 @@ export default function Bearing() {
       {data?.today.map((b) => (
         <Card key={b.bearingId}>
           <Eyebrow>{b.label}</Eyebrow>
+          {b.quote ? (
+            <View style={styles.quoteBlock}>
+              <Body color={color.textPrimary} style={styles.quoteText}>{`“${b.quote.text}”`}</Body>
+              <Mono color={color.textSecondary}>{b.quote.ref}</Mono>
+            </View>
+          ) : null}
           <Body color={color.textPrimary} style={styles.principle}>
             {b.principle}
           </Body>
           {b.prompt ? <Body color={color.textBody}>{b.prompt}</Body> : null}
 
           <Pressable onPress={() => void Linking.openURL(b.source.url)} hitSlop={8} style={styles.sourceRow}>
-            <Mono color={color.actionText}>Open the source →</Mono>
+            <Mono color={color.actionText}>{b.quote ? 'Read it in context →' : 'Open the source →'}</Mono>
           </Pressable>
           <Caption>{b.source.attribution}</Caption>
           <Caption>{b.copyright}</Caption>
@@ -176,6 +182,8 @@ const styles = StyleSheet.create({
   },
   chipActive: { backgroundColor: color.action, borderColor: color.action },
   principle: { fontSize: 18, lineHeight: 26 },
+  quoteBlock: { gap: space.xs, paddingLeft: space.md, borderLeftWidth: 2, borderLeftColor: color.action },
+  quoteText: { fontSize: 17, lineHeight: 25 },
   sourceRow: { paddingVertical: space.xs },
   logList: { gap: space.lg },
   input: {

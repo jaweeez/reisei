@@ -140,6 +140,8 @@ export interface BearingView {
   principle: string;
   /** A short question / concrete action to carry into today, or null. */
   prompt: string | null;
+  /** The day's anchoring quote (shown as an epigraph); `source.url` opens the exact passage. */
+  quote: { text: string; ref: string } | null;
   source: BearingSource;
   /** A subtle affiliation / copyright note (Enso's copyrightNote pattern). */
   copyright: string;
