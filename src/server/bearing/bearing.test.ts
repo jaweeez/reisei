@@ -1,7 +1,7 @@
 /// <reference types="jest" />
 import type { RetrievedTeaching } from '@/server/ai/vector';
 import { DAILY_STATES, getSchool, isSchoolId, quoteForToday, SCHOOL_IDS, SCHOOLS, stateForToday, themeForToday } from './schools';
-import { BEARING_SYSTEM, buildBearingPrompt, parseBearingText, pickSource, splitTeachingContent } from './compose';
+import { BEARING_SYSTEM, buildBearingPrompt, deDash, parseBearingText, pickSource, splitTeachingContent } from './compose';
 
 const chunk = (over: Partial<RetrievedTeaching> = {}): RetrievedTeaching => ({
   ref_id: 't1', title: 'A teaching', url: null, ideology: 'stoicism', theme: 'control', content: 'x', similarity: 0, ...over,
@@ -120,6 +120,13 @@ describe('compose', () => {
     expect(noQuote).toContain('fear about what is coming');
     expect(noQuote).not.toContain('undefined');
     expect(noQuote).not.toContain('null');
+  });
+
+  it('deDash strips em/en dashes to commas (house style bans em dashes)', () => {
+    expect(deDash("stillness isn't rest—it's the place")).toBe("stillness isn't rest, it's the place");
+    expect(deDash('Name it to yourself—heavy, numb')).toBe('Name it to yourself, heavy, numb');
+    expect(deDash('word — word')).toBe('word, word');
+    expect(deDash('no dashes here')).toBe('no dashes here');
   });
 
   it('pickSource prefers a retrieved url of the same school, else the canonical source', () => {

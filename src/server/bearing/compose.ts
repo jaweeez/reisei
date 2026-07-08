@@ -6,22 +6,20 @@ import type { BearingQuote, BearingSchool } from './schools';
 // Pure, dependency-light helpers for generating a bearing — no DB, no AI client, no env.
 // Kept separate from generate.ts so they're trivially unit-testable.
 
-export const BEARING_SYSTEM = `You are the Reisei coach writing "the bearing" for today: a short read that meets a feeling likely to be up, THROUGH today's quote from the SCHOOL the person follows, plus ONE concrete technique to work through it.
+export const BEARING_SYSTEM = `You are the Reisei coach writing "the bearing" for today. TODAY'S QUOTE, a real public-domain line from the person's SCHOOL, is the centerpiece and is shown to the reader in full. Weight the moment toward the quote: a brief reflection that helps a man take it into his body today, plus ONE concrete technique.
 
 ${REISEI_VOICE}
 
-You are given TODAY'S QUOTE: a real, public-domain line from the school's own source. It is shown to the reader directly above your text, so do NOT repeat it word-for-word.
-
-Shape:
-- Start from TODAY'S STATE, a feeling that is common on any given day, not a diagnosis of this person. Name it plainly and point to where it tends to sit in the body.
-- Draw the through-line from the QUOTE to that state: what this line asks of a man when he feels this way. Represent the tradition accurately and with respect. A principle to act on, not devotional content.
-- Use your OWN words. You may paraphrase or allude to the quote, but never reproduce it verbatim or quote any other copyrighted text, and never invent a different reference, quote, or number. If no quote is given, state the school's core approach to the state plainly and invent nothing.
+The quote carries the weight, not you. So:
+- Keep your own words short and in service of the quote. Do not restate the whole quote back; illuminate the one move it asks for.
+- Land it in the body and the day. Connect the quote to a feeling that is commonly up (TODAY'S STATE) and where it sits physically. Name it plainly and briefly, not as a diagnosis of this person.
+- Never reproduce the quote word-for-word, quote any other copyrighted text, or invent a different reference, quote, or number. If no quote is given, state the school's core approach to the state plainly and invent nothing.
 
 ${SAFETY_OFFRAMP}
 
 Output EXACTLY:
-- First: the read (1 to 3 sentences) in Reisei's voice, tied to today's quote.
-- Then a new line beginning with "Try:" and ONE small, concrete thing to do right now to work the state through (a breath, a written line, a body cue, a next move). Doable in a minute.`;
+- First: the reflection, one short sentence (two at most), no preamble. The quote is the star; your words only point at it. Keep it under about 35 words.
+- Then a new line beginning with "Try:" and ONE small, concrete thing to do right now to work the state through (a breath, a written line, a body cue, a next move). Doable in a minute, one or two sentences.`;
 
 /** The link-out for the bearing: prefer a retrieved chunk's url (same school), else the
  *  school's canonical source. Attribution always stays the school's (trusted). */
@@ -51,7 +49,7 @@ export function buildBearingPrompt(school: BearingSchool, quote: BearingQuote | 
   const quoteLine = quote
     ? `TODAY'S QUOTE (public domain, from this school): "${quote.text}" — ${quote.ref}`
     : "(no quote today — state the school's core approach to the state plainly.)";
-  return `SCHOOL: ${school.label}\nTODAY'S STATE: ${state}\n${quoteLine}\n\nSUPPORTING TEACHINGS (optional context):\n${block}\n\nWrite today's bearing: meet the state through the quote's meaning, then one small technique.`;
+  return `SCHOOL: ${school.label}\n${quoteLine}\nTODAY'S STATE: ${state}\n\nSUPPORTING TEACHINGS (optional context):\n${block}\n\nWrite today's bearing: let the quote lead and carry the weight, keep your reflection brief and in service of it, then one small technique.`;
 }
 
 /** Parse the model output ("<read>\nTry: <technique>") into its two parts. Accepts the
@@ -65,4 +63,14 @@ export function parseBearingText(text: string): { principle: string; prompt: str
     return { principle, prompt: prompt || null };
   }
   return { principle: t.replace(/^(?:READ|PRINCIPLE):\s*/i, '').trim(), prompt: null };
+}
+
+/** House style bans em dashes, but the model still emits them now and then. Strip em/en
+ *  dashes from generated copy at the source: a dash between clauses becomes a comma. */
+export function deDash(s: string): string {
+  return s
+    .replace(/\s*[—–]\s*/g, ', ')
+    .replace(/,\s*,/g, ',')
+    .replace(/\s+([,.;:!?])/g, '$1')
+    .trim();
 }

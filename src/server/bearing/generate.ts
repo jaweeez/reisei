@@ -3,7 +3,7 @@ import { anthropic, CHAT_MODEL, chatEnabled } from '@/server/ai/anthropic';
 import { searchTeachings } from '@/server/ai/vector';
 import type { BearingSource } from '@/lib/data/types';
 import { getSchool, quoteForToday, stateForToday, themeForToday } from './schools';
-import { BEARING_SYSTEM, buildBearingPrompt, parseBearingText, pickSource, splitTeachingContent } from './compose';
+import { BEARING_SYSTEM, buildBearingPrompt, deDash, parseBearingText, pickSource, splitTeachingContent } from './compose';
 
 // Generate "the bearing" for a school on a given local date: retrieve grounding from the
 // coach corpus (searchTeachings — vector when Voyage is configured, else keyword fallback),
@@ -37,7 +37,7 @@ export async function generateBearing(ideology: string, localDate: string): Prom
   const fallback = (): GeneratedBearing => {
     const top = retrieved[0];
     const base = top ? splitTeachingContent(top.content) : { principle: school.blurb, prompt: null };
-    return { principle: base.principle, prompt: base.prompt, source, quote: viewQuote, grounding, model: 'fallback' };
+    return { principle: deDash(base.principle), prompt: base.prompt ? deDash(base.prompt) : null, source, quote: viewQuote, grounding, model: 'fallback' };
   };
 
   if (!chatEnabled()) return fallback();
@@ -52,7 +52,7 @@ export async function generateBearing(ideology: string, localDate: string): Prom
     });
     const parsed = parseBearingText(text);
     if (!parsed.principle) return fallback();
-    return { principle: parsed.principle, prompt: parsed.prompt, source, quote: viewQuote, grounding, model: CHAT_MODEL };
+    return { principle: deDash(parsed.principle), prompt: parsed.prompt ? deDash(parsed.prompt) : null, source, quote: viewQuote, grounding, model: CHAT_MODEL };
   } catch (e) {
     console.error('bearing generate error:', e instanceof Error ? e.message : e);
     return fallback();

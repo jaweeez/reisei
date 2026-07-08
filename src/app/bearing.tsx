@@ -104,7 +104,7 @@ export default function Bearing() {
               <Mono color={color.textSecondary}>{b.quote.ref}</Mono>
             </View>
           ) : null}
-          <Body color={color.textPrimary} style={styles.principle}>
+          <Body color={color.textBody} style={styles.principle}>
             {b.principle}
           </Body>
           {b.prompt ? <Body color={color.textBody}>{b.prompt}</Body> : null}
@@ -181,9 +181,9 @@ const styles = StyleSheet.create({
     borderColor: color.rule,
   },
   chipActive: { backgroundColor: color.action, borderColor: color.action },
-  principle: { fontSize: 18, lineHeight: 26 },
+  principle: { fontSize: 16, lineHeight: 24 },
   quoteBlock: { gap: space.xs, paddingLeft: space.md, borderLeftWidth: 2, borderLeftColor: color.action },
-  quoteText: { fontSize: 17, lineHeight: 25 },
+  quoteText: { fontSize: 20, lineHeight: 28 },
   sourceRow: { paddingVertical: space.xs },
   logList: { gap: space.lg },
   input: {
