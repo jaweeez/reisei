@@ -12,6 +12,7 @@ export default function SignIn() {
   const [username, setUsername] = useState('');
   const [pin, setPin] = useState('');
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -20,7 +21,7 @@ export default function SignIn() {
   async function submit() {
     setBusy(true);
     setError(null);
-    const err = mode === 'register' ? await register(username, pin, name) : await login(username, pin);
+    const err = mode === 'register' ? await register(username, pin, name, email) : await login(username, pin);
     setBusy(false);
     if (err) setError(err);
   }
@@ -43,10 +44,13 @@ export default function SignIn() {
 
       <View style={styles.form}>
         {mode === 'register' && (
-          <Field placeholder="Name" value={name} onChangeText={setName} autoCapitalize="words" />
+          <>
+            <Field placeholder="Name" value={name} onChangeText={setName} autoCapitalize="words" />
+            <Field placeholder="Email" value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false} keyboardType="email-address" />
+          </>
         )}
         <Field placeholder="Username" value={username} onChangeText={setUsername} autoCapitalize="none" />
-        <Field placeholder="PIN (4–8 digits)" value={pin} onChangeText={setPin} keyboardType="number-pad" secureTextEntry />
+        <Field placeholder="PIN (4 to 8 digits)" value={pin} onChangeText={setPin} keyboardType="number-pad" secureTextEntry />
 
         {error && <Body color={color.actionText}>{error}</Body>}
 
@@ -59,6 +63,7 @@ export default function SignIn() {
             setError(null);
           }}
         />
+        {mode === 'login' && <Button label="Forgot PIN?" variant="ghost" onPress={() => router.push('/forgot-pin')} />}
       </View>
     </Screen>
   );

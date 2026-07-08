@@ -33,6 +33,12 @@ export async function POST(req: Request) {
 
   await pool().query(`select auth_clear_pin_failures($1)`, [u.id]);
   const token = await createSession(u.id, req.headers.get('user-agent'));
-  const user = (await adminPool().query(`select id, name, username, tz, plan from users where id = $1`, [u.id])).rows[0];
+  const user = (
+    await adminPool().query(
+      `select id, name, username, tz, plan, email, email_verified as "emailVerified", email_required as "emailRequired"
+         from users where id = $1`,
+      [u.id],
+    )
+  ).rows[0];
   return Response.json({ token, user }, { headers: { 'set-cookie': sessionCookie(token) } });
 }

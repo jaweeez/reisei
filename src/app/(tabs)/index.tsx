@@ -4,10 +4,12 @@ import { Alert, Platform, Pressable, StyleSheet, TextInput, View } from 'react-n
 import * as Haptics from 'expo-haptics';
 import { Body, Button, Caption, Card, CrewDots, Display, Eyebrow, Mono, Screen, Text, Title, VialMark } from '@/components';
 import { checkIn, createLine, fetchState } from '@/lib/data/client';
+import { useAuth } from '@/lib/auth/AuthProvider';
 import type { HomeState, LineKind } from '@/lib/data/types';
 import { color, radius, space } from '@/theme';
 
 export default function Today() {
+  const { user } = useAuth();
   const [state, setState] = useState<HomeState | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
@@ -104,6 +106,13 @@ export default function Today() {
           <Mono color={color.actionText}>Coach</Mono>
           <Body color={color.textPrimary}>{state.todayNudge}</Body>
         </View>
+      )}
+
+      {user && !user.emailRequired && !user.emailVerified && (
+        <Pressable style={styles.banner} onPress={() => router.push('/verify-email')}>
+          <Mono color={color.actionText}>Account</Mono>
+          <Body color={color.textPrimary}>Add an email so you can recover your account.</Body>
+        </Pressable>
       )}
 
       <Card>

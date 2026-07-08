@@ -9,6 +9,12 @@ export interface Me {
   plan: 'free' | 'pro';
   /** Local HH:MM the coach's "post" nudge fires. */
   holdTime?: string;
+  /** Recovery email (normalized lowercase), if set. */
+  email?: string;
+  /** Whether the email has been verified. */
+  emailVerified?: boolean;
+  /** True for accounts created under the required-email regime (walled until verified). */
+  emailRequired?: boolean;
 }
 
 export type Tier = 'free' | 'pro' | 'team';

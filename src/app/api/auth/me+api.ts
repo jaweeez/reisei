@@ -9,7 +9,12 @@ export async function GET(req: Request) {
 
   const [user, entitlement] = await Promise.all([
     adminPool()
-      .query(`select id, name, username, tz, plan, hold_time as "holdTime" from users where id = $1`, [userId])
+      .query(
+        `select id, name, username, tz, plan, hold_time as "holdTime",
+                email, email_verified as "emailVerified", email_required as "emailRequired"
+           from users where id = $1`,
+        [userId],
+      )
       .then((r) => r.rows[0] ?? null),
     getEntitlement(userId),
   ]);

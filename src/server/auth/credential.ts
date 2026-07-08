@@ -11,12 +11,29 @@ export function normalizeUsername(raw: string): string {
   return raw.trim().toLowerCase();
 }
 
+export function normalizeEmail(raw: string): string {
+  return raw.trim().toLowerCase();
+}
+
+/** Returns an error string if the PIN is invalid, else null. */
+export function validatePin(pin: string): string | null {
+  if (!/^\d{4,8}$/.test(pin)) return 'PIN must be 4 to 8 digits.';
+  return null;
+}
+
 /** Returns an error string if invalid, else null. */
 export function validateCredentials(username: string, pin: string): string | null {
   if (!/^[a-z0-9_.]{3,24}$/.test(username)) {
-    return 'Username must be 3–24 chars: letters, numbers, dot or underscore.';
+    return 'Username must be 3 to 24 chars: letters, numbers, dot or underscore.';
   }
-  if (!/^\d{4,8}$/.test(pin)) return 'PIN must be 4–8 digits.';
+  return validatePin(pin);
+}
+
+/** Returns an error string if invalid, else null. */
+export function validateEmail(email: string): string | null {
+  if (!email) return 'Enter your email.';
+  if (email.length > 254) return 'That email is too long.';
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Enter a valid email.';
   return null;
 }
 

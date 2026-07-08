@@ -37,24 +37,27 @@ async function main() {
   const p = directPool();
   const pinHash = await hashSecret(pin);
 
-  // Register; auth_register_user returns null if the username is taken.
-  const reg = await p.query<{ id: string | null }>(`select auth_register_user($1, $2, $3) as id`, [
-    username,
-    name,
-    pinHash,
-  ]);
-  let userId = reg.rows[0]?.id ?? null;
+  // Direct insert (owner connection). Admin accounts are grace accounts: no email required,
+  // so email_required defaults to false and they are never walled. Idempotent on username.
+  let userId: string | null = null;
   let created = true;
-
-  if (!userId) {
+  try {
+    const reg = await p.query<{ id: string }>(
+      `insert into users (name, username, pin_hash) values ($1, $2, $3) returning id`,
+      [name, username, pinHash],
+    );
+    userId = reg.rows[0]!.id;
+    await p.query(`insert into streaks (user_id) values ($1) on conflict do nothing`, [userId]);
+  } catch (e) {
+    if ((e as { code?: string })?.code !== '23505') throw e; // not a unique_violation
     created = false;
     const existing = await p.query<{ id: string }>(`select id from users where username = $1`, [username]);
     userId = existing.rows[0]?.id ?? null;
     if (!userId) {
-      console.error(`Username "${username}" is taken but no row found — aborting.`);
+      console.error(`Username "${username}" is taken but no row found. Aborting.`);
       process.exit(1);
     }
-    console.log(`• "${username}" already exists — elevating to ${plan} (PIN left unchanged).`);
+    console.log(`• "${username}" already exists. Elevating to ${plan} (PIN left unchanged).`);
   }
 
   await p.query(`update users set plan = $2, is_admin = true where id = $1`, [userId, plan]);

@@ -10,9 +10,11 @@ function TabGlyph({ glyph, focused }: { glyph: string; focused: boolean }) {
 }
 
 export default function TabsLayout() {
-  const { status } = useAuth();
+  const { status, user } = useAuth();
   if (status === 'loading') return null;
   if (status === 'guest') return <Redirect href="/landing" />;
+  // New accounts (email_required) must verify their email before using the app.
+  if (user && user.emailRequired && !user.emailVerified) return <Redirect href="/verify-email" />;
 
   return (
     <Tabs

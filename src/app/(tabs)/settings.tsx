@@ -45,6 +45,26 @@ export default function Settings() {
       </Card>
 
       <Card>
+        <Eyebrow>Email</Eyebrow>
+        {user?.email ? (
+          <>
+            <Body color={color.textPrimary}>{user.email}</Body>
+            <Mono>{user.emailVerified ? 'Verified' : 'Unverified'}</Mono>
+            {user.emailVerified ? (
+              <Button label="Change email" variant="ghost" onPress={() => router.push({ pathname: '/verify-email', params: { change: '1' } })} />
+            ) : (
+              <Button label="Verify email" variant="secondary" onPress={() => router.push('/verify-email')} />
+            )}
+          </>
+        ) : (
+          <>
+            <Caption>Add an email so you can recover your account if you forget your PIN.</Caption>
+            <Button label="Add email" variant="secondary" onPress={() => router.push('/verify-email')} />
+          </>
+        )}
+      </Card>
+
+      <Card>
         <Eyebrow>Plan</Eyebrow>
         <Body color={color.textPrimary}>{TIER_LABEL[entitlement?.tier ?? 'free']}</Body>
         {entitlement?.tier === 'free' ? (

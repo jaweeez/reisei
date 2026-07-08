@@ -9,7 +9,7 @@ interface AuthValue {
   user: Me | null;
   entitlement: Entitlement | null;
   refresh: () => Promise<void>;
-  register: (username: string, pin: string, name?: string) => Promise<string | null>;
+  register: (username: string, pin: string, name: string, email: string) => Promise<string | null>;
   login: (username: string, pin: string) => Promise<string | null>;
   logout: () => Promise<void>;
 }
@@ -39,8 +39,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   const register = useCallback(
-    async (username: string, pin: string, name?: string) => {
-      const r = await authApi.register(username, pin, name);
+    async (username: string, pin: string, name: string, email: string) => {
+      const r = await authApi.register(username, pin, name, email);
       if (r.token) {
         await refresh();
         return null;

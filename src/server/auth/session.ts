@@ -44,6 +44,11 @@ export async function revokeSession(token: string | null | undefined): Promise<v
   }
 }
 
+/** Revoke every session for a user (e.g. after a PIN reset). Index-backed on sessions_user_id_idx. */
+export async function revokeAllSessions(userId: string): Promise<void> {
+  await pool().query(`delete from sessions where user_id = $1`, [userId]);
+}
+
 /** The Set-Cookie value for a new session (web; native uses the Bearer token). */
 export function sessionCookie(token: string): string {
   const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
