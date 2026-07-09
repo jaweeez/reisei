@@ -12,6 +12,7 @@ interface AuthValue {
   register: (username: string, pin: string, name: string, email: string) => Promise<string | null>;
   login: (username: string, pin: string) => Promise<string | null>;
   logout: () => Promise<void>;
+  deleteAccount: (pin: string) => Promise<string | null>;
 }
 
 const Ctx = createContext<AuthValue | null>(null);
@@ -69,9 +70,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus('guest');
   }, []);
 
+  const deleteAccount = useCallback(async (pin: string) => {
+    const res = await authApi.deleteAccount(pin);
+    if (res.ok) {
+      setUser(null);
+      setEntitlement(null);
+      setStatus('guest');
+      return null;
+    }
+    return res.data?.error ?? 'Could not delete your account.';
+  }, []);
+
   const value = useMemo<AuthValue>(
-    () => ({ status, user, entitlement, refresh, register, login, logout }),
-    [status, user, entitlement, refresh, register, login, logout],
+    () => ({ status, user, entitlement, refresh, register, login, logout, deleteAccount }),
+    [status, user, entitlement, refresh, register, login, logout, deleteAccount],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

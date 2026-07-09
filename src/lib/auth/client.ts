@@ -24,6 +24,16 @@ export const authApi = {
     await clearToken();
   },
 
+  // Permanently delete the account (PIN-confirmed). Clears the local token on success.
+  deleteAccount: async (pin: string) => {
+    const res = await api<{ ok?: boolean; error?: string }>('/api/auth/delete', {
+      method: 'POST',
+      body: JSON.stringify({ pin }),
+    });
+    if (res.ok) await clearToken();
+    return res;
+  },
+
   // Email verification (signed in).
   addEmail: (email: string) =>
     api<{ ok?: boolean; error?: string; cooldown?: number }>('/api/auth/email', { method: 'POST', body: JSON.stringify({ email }) }),

@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Linking, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { Body, Button, Caption, Card, CrisisCard, Eyebrow, Mono, Screen, Text, Title } from '@/components';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { billingApi } from '@/lib/billing/client';
@@ -12,9 +12,13 @@ const TIER_LABEL: Record<string, string> = { free: 'Free', pro: 'Reisei Pro', te
 const HOLD_TIMES = ['18:00', '20:00', '22:00'];
 
 export default function Settings() {
-  const { user, entitlement, logout, refresh } = useAuth();
+  const { user, entitlement, logout, refresh, deleteAccount } = useAuth();
   const [portalAvailable, setPortalAvailable] = useState(false);
   const [hold, setHold] = useState(user?.holdTime ?? '20:00');
+  const [delOpen, setDelOpen] = useState(false);
+  const [delPin, setDelPin] = useState('');
+  const [delBusy, setDelBusy] = useState(false);
+  const [delErr, setDelErr] = useState<string | null>(null);
 
   useEffect(() => {
     void billingApi.status().then((r) => setPortalAvailable(Boolean(r.data.portalAvailable)));
@@ -32,6 +36,16 @@ export default function Settings() {
     setHold(t);
     await setHoldTime(t);
     await refresh();
+  }
+
+  async function onDelete() {
+    if (!(await confirmDelete())) return;
+    setDelBusy(true);
+    setDelErr(null);
+    const err = await deleteAccount(delPin);
+    setDelBusy(false);
+    // On success the provider flips to guest and (tabs)/_layout redirects to /landing.
+    if (err) setDelErr(err);
   }
 
   return (
@@ -118,13 +132,72 @@ export default function Settings() {
         <Button label="Log out" variant="secondary" onPress={logout} />
       </Card>
 
+      <Card>
+        <Eyebrow>Danger zone</Eyebrow>
+        <Caption>Delete your account and everything in it: your line, streak, log, and Corner standing. This cannot be undone.</Caption>
+        {!delOpen ? (
+          <Button label="Delete account" variant="ghost" onPress={() => setDelOpen(true)} />
+        ) : (
+          <>
+            <TextInput
+              placeholder="Enter your PIN to confirm"
+              placeholderTextColor={color.textSecondary}
+              value={delPin}
+              onChangeText={setDelPin}
+              keyboardType="number-pad"
+              secureTextEntry
+              maxLength={8}
+              style={styles.input}
+            />
+            {delErr && <Body color={color.actionText}>{delErr}</Body>}
+            <Button label="Delete permanently" onPress={onDelete} loading={delBusy} disabled={delPin.length < 4} />
+            <Button
+              label="Cancel"
+              variant="ghost"
+              onPress={() => {
+                setDelOpen(false);
+                setDelPin('');
+                setDelErr(null);
+              }}
+            />
+          </>
+        )}
+      </Card>
+
+      <Pressable onPress={() => router.push('/privacy')} hitSlop={8} style={styles.legal}>
+        <Mono>Privacy policy</Mono>
+      </Pressable>
+
       <Caption>{`Reisei · Mu Works LLC${Platform.OS !== 'web' ? ' · IAP via RevenueCat' : ''}`}</Caption>
     </Screen>
   );
 }
 
+function confirmDelete(): Promise<boolean> {
+  const msg = 'Delete your account permanently? This erases everything and cannot be undone.';
+  if (Platform.OS === 'web') return Promise.resolve(typeof window !== 'undefined' ? window.confirm(msg) : true);
+  return new Promise((res) =>
+    Alert.alert('Delete account?', msg, [
+      { text: 'Cancel', style: 'cancel', onPress: () => res(false) },
+      { text: 'Delete', style: 'destructive', onPress: () => res(true) },
+    ]),
+  );
+}
+
 const styles = StyleSheet.create({
   stack: { gap: 12 },
+  legal: { alignItems: 'center', paddingVertical: space.sm },
+  input: {
+    minHeight: 52,
+    backgroundColor: color.bg,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: color.rule,
+    paddingHorizontal: space.lg,
+    color: color.textPrimary,
+    fontFamily: 'IBMPlexSans_400Regular',
+    fontSize: 16,
+  },
   chips: { flexDirection: 'row', gap: space.sm },
   chip: {
     flex: 1,
