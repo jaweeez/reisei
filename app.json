@@ -8,6 +8,7 @@
     "scheme": "reisei",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#1B1918",
+    "icon": "./assets/brand/app-icon.png",
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.muworks.reisei",
@@ -20,6 +21,10 @@
       "versionCode": 1,
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/brand/icon-adaptive.png",
+        "backgroundColor": "#1B1918"
+      },
       "permissions": [
         "android.permission.POST_NOTIFICATIONS"
       ]
@@ -34,6 +39,7 @@
       [
         "expo-splash-screen",
         {
+          "image": "./assets/brand/splash-icon.png",
           "backgroundColor": "#1B1918",
           "imageWidth": 200
         }
