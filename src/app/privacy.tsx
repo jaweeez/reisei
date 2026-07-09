@@ -59,19 +59,22 @@ export default function Privacy() {
 
       <S title="What you write, and AI">
         <P>
-          To tune the Bearing and understand themes in your log, the text of your log entries and check-in notes is
-          sent to third-party AI providers (Anthropic and Voyage AI) to generate a short numerical representation
-          (an embedding) and a brief reflection. This text is processed to provide the feature; it is not used to
-          train those providers' models. Your log is private and is never shown to your crew.
+          To personalize the Bearing and read themes in your log, the text of your log entries and check-in notes is
+          sent to third-party AI providers, Anthropic (the Claude API) and Voyage AI (an embeddings provider, part of
+          MongoDB), which turn it into a short numerical representation (an embedding) and a brief written reflection.
+          We use these providers under their commercial API terms, under which your text is not used to train their
+          models by default. They may retain it briefly to monitor for abuse or safety, which is not model training.
+          Your log is private and is never shown to your crew.
         </P>
       </S>
 
       <S title="Who we share it with">
         <P>
           Your crew sees your daily posture (held, broke, or nothing yet) and your line. That is the point of a
-          crew. Beyond that, we share data only with the service providers that run Reisei on our behalf: cloud
-          hosting and database, email delivery, AI processing (above), push notifications, and, if you buy Pro,
-          payment processing. They may only use it to provide their service to us.
+          crew. Beyond that, we share data only with the service providers that run Reisei on our behalf: hosting
+          (Vercel), the database (Neon), email delivery (Amazon SES), AI processing (Anthropic and Voyage AI,
+          above), push notifications (Expo), and, if you buy Pro, payment processing (Stripe and RevenueCat). They
+          may use it only to provide their service to us.
         </P>
       </S>
 
@@ -80,14 +83,16 @@ export default function Privacy() {
           We keep your data while your account is active. You can delete your account at any time in Settings, under
           Danger zone: this permanently removes your account and its data (your line, check-ins, streak, log,
           profile, and crew standing) and cannot be undone. If you captain a crew, deleting your account removes
-          that crew.
+          that crew. Residual copies may persist in encrypted backups for a short time before they cycle out, and
+          our providers may keep limited records where the law requires.
         </P>
       </S>
 
       <S title="Security">
         <P>
-          PINs are hashed with bcrypt. Data is encrypted in transit, and access is scoped per user at the database
-          level. No system is perfectly secure, but we work to protect your data and limit who can reach it.
+          PINs are hashed with bcrypt (we never store the PIN itself). Data is encrypted in transit, and encrypted
+          at rest by our database provider. Access is scoped per user at the database level (row-level security). No
+          system is perfectly secure, but we work to protect your data and limit who can reach it.
         </P>
       </S>
 
