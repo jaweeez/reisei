@@ -1,11 +1,12 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
-import { Body, Button, Caption, Card, Eyebrow, Mono, Screen, Text, Title, VialMark } from '@/components';
+import { Body, Button, Caption, Card, Eyebrow, Input, Mono, Screen, Text, Title, VialMark } from '@/components';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { billingApi, type Interval } from '@/lib/billing/client';
 import { configureIap, getProPackages, iapEnabled, purchase, restore } from '@/lib/billing/iap';
-import { color, space } from '@/theme';
+import { orgApi } from '@/lib/data/client';
+import { color, radius, space } from '@/theme';
 
 const APP_URL = (process.env.EXPO_PUBLIC_APP_URL || 'https://reiseiapp.com').replace(/\/$/, '');
 
@@ -19,15 +20,69 @@ const PRO_FEATURES = [
   'Follow as many schools as you want',
 ];
 
+const CORNER_MIN = 2;
+const CORNER_MAX_SEATS = 8;
+const ORG_MIN = 9;
+
+function Stepper({
+  value,
+  min,
+  max,
+  onChange,
+  disabled,
+}: {
+  value: number;
+  min: number;
+  max?: number;
+  onChange: (n: number) => void;
+  disabled?: boolean;
+}) {
+  const atMin = value <= min;
+  const atMax = max !== undefined && value >= max;
+  return (
+    <View style={styles.stepper}>
+      <Pressable
+        style={styles.stepBtn}
+        onPress={() => onChange(Math.max(min, value - 1))}
+        disabled={disabled || atMin}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel="Fewer seats"
+      >
+        <Mono color={atMin ? color.textSecondary : color.actionText}>-</Mono>
+      </Pressable>
+      <Mono color={color.textPrimary} style={styles.stepCount}>{`${value} seats`}</Mono>
+      <Pressable
+        style={styles.stepBtn}
+        onPress={() => onChange(max !== undefined ? Math.min(max, value + 1) : value + 1)}
+        disabled={disabled || atMax}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel="More seats"
+      >
+        <Mono color={atMax ? color.textSecondary : color.actionText}>+</Mono>
+      </Pressable>
+    </View>
+  );
+}
+
 export default function Paywall() {
   const { user, refresh } = useAuth();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [restored, setRestored] = useState(false);
+  const [cornerSeats, setCornerSeats] = useState(3);
+  const [orgSeats, setOrgSeats] = useState(ORG_MIN);
+  const [orgName, setOrgName] = useState('');
+  const [orgAvailable, setOrgAvailable] = useState(false);
 
   useEffect(() => {
     if (user?.id) void configureIap(user.id);
   }, [user?.id]);
+
+  useEffect(() => {
+    void billingApi.status().then((r) => setOrgAvailable((r.data.orgIntervals ?? []).length > 0));
+  }, []);
 
   async function buyPro(interval: Interval) {
     setBusy(`pro-${interval}`);
@@ -54,18 +109,54 @@ export default function Paywall() {
     }
   }
 
-  async function buyTeam(interval: Interval) {
-    // Team seats are web-only (per-seat can't run on IAP). On mobile, send them to web.
+  async function buySeats(interval: 'monthly' | 'annual' = 'monthly') {
+    // Per-seat plans are web-only (they can't run on IAP). On mobile, send them to web.
     if (Platform.OS !== 'web') {
-      void Linking.openURL(`${APP_URL}/paywall?plan=team`);
+      void Linking.openURL(`${APP_URL}/paywall?plan=seat`);
       return;
     }
-    setBusy(`team-${interval}`);
+    setBusy(interval === 'annual' ? 'seat-annual' : 'seat');
     setError(null);
     try {
-      const res = await billingApi.checkout('seat', interval, 3);
+      const res = await billingApi.checkout('seat', interval, cornerSeats);
       if (res.data.url) void Linking.openURL(res.data.url);
-      else setError('Could not start checkout. Try again.');
+      else setError(res.data.error || 'Could not start checkout. Try again.');
+    } catch {
+      setError('Could not start checkout. Try again.');
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function buyOrg(interval: 'monthly' | 'annual' = 'monthly') {
+    // Per-seat plans are web-only (they can't run on IAP). On mobile, send them to web.
+    if (Platform.OS !== 'web') {
+      void Linking.openURL(`${APP_URL}/paywall?plan=org`);
+      return;
+    }
+    const name = orgName.trim();
+    if (name.length < 2) {
+      setError('Give your organization a name.');
+      return;
+    }
+    setBusy(interval === 'annual' ? 'org-annual' : 'org');
+    setError(null);
+    try {
+      const r = await orgApi.create(name);
+      let orgId = r.data.id;
+      if (!orgId) {
+        if (r.data.error?.includes('already run')) {
+          // They already run one; checkout against it.
+          orgId = (await orgApi.get())?.id;
+        }
+        if (!orgId) {
+          setError(r.data.error || 'Could not start checkout. Try again.');
+          return;
+        }
+      }
+      const res = await billingApi.checkout('org', interval, orgSeats, orgId);
+      if (res.data.url) void Linking.openURL(res.data.url);
+      else setError(res.data.error || 'Could not start checkout. Try again.');
     } catch {
       setError('Could not start checkout. Try again.');
     } finally {
@@ -101,7 +192,7 @@ export default function Paywall() {
       <View style={styles.head}>
         <VialMark width={140} />
         <Title style={{ marginTop: space.lg }}>Stay level, together</Title>
-        <Caption center>Free to join a Corner. Pay to lead one.</Caption>
+        <Caption center>Every seat in a Corner is a paid seat.</Caption>
       </View>
 
       <Card>
@@ -132,18 +223,61 @@ export default function Paywall() {
       </Card>
 
       <Card>
-        <Eyebrow>Corner · Team</Eyebrow>
+        <Eyebrow>Corner</Eyebrow>
         <Text variant="display" color={color.textPrimary}>$4.99<Text variant="mono" color={color.textBody}> /seat/mo</Text></Text>
-        <Body>Sponsor your whole Corner. Every seated member gets Pro, and you get captain tools. Min 3 seats.</Body>
-        <Button
-          label="Sponsor a Corner"
-          variant="secondary"
-          onPress={() => buyTeam('monthly')}
-          loading={busy === 'team-monthly'}
-          disabled={busy !== null && busy !== 'team-monthly'}
+        <Body>Your Corner runs on seats. Two to eight: you cover your people, everyone seated gets Pro.</Body>
+        <Stepper
+          value={cornerSeats}
+          min={CORNER_MIN}
+          max={CORNER_MAX_SEATS}
+          onChange={setCornerSeats}
+          disabled={busy !== null}
         />
-        {Platform.OS !== 'web' && <Caption>Team seats are managed on reiseiapp.com.</Caption>}
+        <Button
+          label={`Buy ${cornerSeats} seats`}
+          onPress={() => buySeats('monthly')}
+          loading={busy === 'seat'}
+          disabled={busy !== null && busy !== 'seat'}
+        />
+        <Button
+          label={`Annual · $49.99/seat/yr`}
+          variant="secondary"
+          onPress={() => buySeats('annual')}
+          loading={busy === 'seat-annual'}
+          disabled={busy !== null && busy !== 'seat-annual'}
+        />
+        {Platform.OS !== 'web' && <Caption>Seats are managed on reiseiapp.com.</Caption>}
       </Card>
+
+      {orgAvailable && (
+        <Card>
+          <Eyebrow>Organization</Eyebrow>
+          <Text variant="display" color={color.textPrimary}>$3.99<Text variant="mono" color={color.textBody}> /seat/mo</Text></Text>
+          <Body>Nine or more. A church, a gym, a team: several Corners under one roof. You place people and manage every group. Seats get Pro.</Body>
+          <Input
+            inCard
+            placeholder="Organization name"
+            value={orgName}
+            onChangeText={setOrgName}
+            maxLength={60}
+          />
+          <Stepper value={orgSeats} min={ORG_MIN} onChange={setOrgSeats} disabled={busy !== null} />
+          <Button
+            label="Start your organization"
+            onPress={() => buyOrg('monthly')}
+            loading={busy === 'org'}
+            disabled={busy !== null && busy !== 'org'}
+          />
+          <Button
+            label={`Annual · $39.99/seat/yr`}
+            variant="secondary"
+            onPress={() => buyOrg('annual')}
+            loading={busy === 'org-annual'}
+            disabled={busy !== null && busy !== 'org-annual'}
+          />
+          {Platform.OS !== 'web' && <Caption>Seats are managed on reiseiapp.com.</Caption>}
+        </Card>
+      )}
 
       {error && <Body color={color.actionText}>{error}</Body>}
       {restored && <Caption>Purchases restored.</Caption>}
@@ -168,4 +302,15 @@ const styles = StyleSheet.create({
   featureList: { gap: space.xs },
   featureRow: { flexDirection: 'row', gap: space.sm },
   featureBody: { flex: 1 },
+  stepper: { flexDirection: 'row', alignItems: 'center', gap: space.md, alignSelf: 'center' },
+  stepBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: color.ruleStrong,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepCount: { minWidth: 72, textAlign: 'center' },
 });

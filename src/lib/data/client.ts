@@ -8,6 +8,8 @@ import type {
   JournalLogged,
   LineKind,
   LineView,
+  OrgJoined,
+  OrgView,
   SchoolView,
   StreakView,
   Verdict,
@@ -56,9 +58,16 @@ export async function createCrew(name: string): Promise<{ id?: string; error?: s
   return res.data;
 }
 
-export async function joinCrew(code: string): Promise<{ crewId?: string; error?: string }> {
-  const res = await api<{ crewId?: string; error?: string }>('/api/crew/join', { method: 'POST', body: JSON.stringify({ code }) });
-  return res.data;
+export async function joinCrew(
+  code: string,
+): Promise<{ crewId?: string; error?: string; upsell?: boolean; status: number }> {
+  const res = await api<{ crewId?: string; error?: string; upsell?: boolean }>('/api/crew/join', {
+    method: 'POST',
+    body: JSON.stringify({ code }),
+  });
+  // Carry the HTTP status so the UI can tell "bad code" (404, maybe an org code)
+  // from "needs premium" (402) from "Corner is full" (409).
+  return { ...res.data, status: res.status };
 }
 
 export async function createInvite(crewId: string): Promise<{ code?: string; error?: string }> {
@@ -116,6 +125,43 @@ export async function fetchBearingHistory(): Promise<BearingHistory | null> {
 }
 
 // --- The log: a private, free-form journal ---
+
+// --- Organizations ---
+
+export const orgApi = {
+  /** The owner dashboard, or { org: null } for non-owners. */
+  get: async () => {
+    const res = await api<{ org: OrgView | null }>('/api/org');
+    return res.ok ? res.data.org : null;
+  },
+  create: (name: string) =>
+    api<{ id?: string; name?: string; error?: string }>('/api/org', { method: 'POST', body: JSON.stringify({ name }) }),
+  rename: (name: string) => api<{ ok?: boolean; error?: string }>('/api/org', { method: 'PATCH', body: JSON.stringify({ name }) }),
+  invite: (crewId?: string | null) =>
+    api<{ code?: string; error?: string }>('/api/org/invite', { method: 'POST', body: JSON.stringify({ crewId }) }),
+  revokeInvite: (code: string) =>
+    api<{ ok?: boolean; error?: string }>('/api/org/invite', { method: 'DELETE', body: JSON.stringify({ code }) }),
+  join: (code: string) => api<OrgJoined & { error?: string; upsell?: boolean }>('/api/org/join', { method: 'POST', body: JSON.stringify({ code }) }),
+  setSeat: (userId: string, action: 'assign' | 'release') =>
+    api<{ seats?: { total: number; used: number }; error?: string }>('/api/org/seats', {
+      method: 'POST',
+      body: JSON.stringify({ userId, action }),
+    }),
+};
+
+/** Corner-plan seat management (the captain distributes their 2–8 seats). */
+export async function setCrewSeat(crewId: string, userId: string, action: 'assign' | 'release') {
+  return api<{ seats?: { total: number; used: number }; error?: string; upsell?: boolean }>('/api/crew/seats', {
+    method: 'POST',
+    body: JSON.stringify({ crewId, userId, action }),
+  });
+}
+
+/** The caller's Corner-plan seat pool (captain view), or null without an active 'seat' sub. */
+export async function fetchCrewSeatPool(): Promise<{ total: number; used: number; seatedUserIds: string[] } | null> {
+  const res = await api<{ pool: { total: number; used: number; seatedUserIds: string[] } | null }>('/api/crew/seats');
+  return res.ok ? res.data.pool : null;
+}
 
 /** The user's private log feed (free = last 30 days; Pro = everything). */
 export async function fetchJournal(): Promise<JournalFeed | null> {

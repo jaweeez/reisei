@@ -1,14 +1,8 @@
-import { randomBytes } from 'node:crypto';
 import { currentUser } from '@/server/auth/session';
 import { pool } from '@/server/db';
+import { makeCode } from '@/server/codes';
 
 // POST /api/crew/invite { crewId } → mint a share code for a crew you captain.
-function makeCode(): string {
-  // 8 chars, unambiguous alphabet (no 0/O/1/I).
-  const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-  const bytes = randomBytes(8);
-  return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join('');
-}
 
 export async function POST(req: Request) {
   const userId = await currentUser(req);

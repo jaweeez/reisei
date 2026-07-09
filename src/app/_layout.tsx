@@ -36,6 +36,7 @@ export default function RootLayout() {
               <Stack.Screen name="forgot-pin" />
               <Stack.Screen name="paywall" options={{ presentation: 'modal' }} />
               <Stack.Screen name="ledger" options={{ presentation: 'modal' }} />
+              <Stack.Screen name="org" options={{ presentation: 'modal' }} />
               <Stack.Screen name="reset" options={{ presentation: 'modal' }} />
               <Stack.Screen name="bearing" options={{ presentation: 'modal' }} />
             </Stack>

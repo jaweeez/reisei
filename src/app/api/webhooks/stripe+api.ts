@@ -4,10 +4,12 @@ import { billingEnabled, isPaidStatus, statusFromStripe, stripe, webhookSecret }
 
 // POST /api/webhooks/stripe — Stripe → us. The signature (verified against the RAW
 // body) is the only auth. Everything is an idempotent UPSERT so replays are safe.
-// Two plans, keyed by subscription metadata.plan:
+// Three plans, keyed by subscription metadata.plan:
 //   'pro'  → users.plan (individual rail)
-//   'seat' → subscriptions + seat_assignments (Team rail); entitlement.getEntitlement
-//            reads the subscription status, so a paused/canceled sub auto-revokes.
+//   'seat' → subscriptions + seat_assignments (a Corner's 2–8 seats, captain-sponsored)
+//   'org'  → subscriptions bound to an org (9+ seats, multi-Corner); the owner is seated
+//            immediately so the dashboard reflects reality without waiting for an event.
+// entitlement.getEntitlement reads subscription status, so paused/canceled auto-revokes.
 
 function idOf(v: string | { id: string } | null | undefined): string | null {
   if (!v) return null;
@@ -43,21 +45,50 @@ export async function POST(req: Request) {
         const md = s.metadata ?? {};
         const userId = md.userId;
         const customer = idOf(s.customer);
-        const subscription = idOf(s.subscription);
+        const subscriptionId = idOf(s.subscription);
         if (!userId) break;
-        if (md.plan === 'seat') {
+
+        if (md.plan === 'seat' || md.plan === 'org') {
+          // Fetch the live subscription so seats/status/period are right IMMEDIATELY —
+          // seat gating must not wait for a customer.subscription.updated to land. A failed
+          // retrieve 500s so Stripe REDELIVERS (idempotent upsert): persisting placeholder
+          // values here (seats 0 / status 'active') would clobber or starve the pool.
+          let seats: number | null = null;
+          let status = 'active';
+          let period: string | null = null;
+          if (subscriptionId) {
+            try {
+              const live = await stripe().subscriptions.retrieve(subscriptionId);
+              seats = live.items?.data?.[0]?.quantity ?? null;
+              status = statusFromStripe(live.status);
+              period = periodEnd(live);
+            } catch (e) {
+              console.error('stripe retrieve failed; asking for redelivery:', e instanceof Error ? e.message : e);
+              return Response.json({ error: 'subscription retrieve failed' }, { status: 500 });
+            }
+          }
           const sub = (await p.query(
-            `insert into subscriptions (sponsor_id, provider, plan, status, stripe_subscription_id, stripe_customer_id)
-             values ($1, 'stripe', 'team', 'active', $2, $3)
-             on conflict (stripe_subscription_id) do update set status = 'active', stripe_customer_id = excluded.stripe_customer_id
-             returning id`,
-            [userId, subscription, customer],
+            `insert into subscriptions (sponsor_id, provider, plan, status, seats, org_id, stripe_subscription_id, stripe_customer_id, current_period_end)
+             values ($1, 'stripe', $2, $3, coalesce($4, 0), $5, $6, $7, $8)
+             on conflict (stripe_subscription_id) do update
+               set status = excluded.status,
+                   seats = coalesce($4, subscriptions.seats),
+                   org_id = coalesce(excluded.org_id, subscriptions.org_id),
+                   stripe_customer_id = excluded.stripe_customer_id,
+                   current_period_end = coalesce(excluded.current_period_end, subscriptions.current_period_end)
+             returning id, seats`,
+            [userId, md.plan === 'org' ? 'org' : 'team', status, seats, md.orgId ?? null, subscriptionId, customer, period],
           )).rows[0];
-          // The sponsor holds a seat too, so their own tier becomes 'team'.
+          // The sponsor holds a seat too (their own tier: 'team' via has_seat, or 'org' via
+          // ownership). Capacity-guarded: if members already filled the pool (org_join runs
+          // concurrently), don't push assignments past the purchased count.
           if (sub?.id) {
             await p.query(
-              `insert into seat_assignments (subscription_id, user_id) values ($1, $2) on conflict do nothing`,
-              [sub.id, userId],
+              `insert into seat_assignments (subscription_id, user_id)
+               select $1, $2
+                where (select count(*) from seat_assignments where subscription_id = $1) < $3
+               on conflict do nothing`,
+              [sub.id, userId, Number(sub.seats ?? 0)],
             );
           }
         } else {
@@ -74,12 +105,22 @@ export async function POST(req: Request) {
         const sub = event.data.object as Stripe.Subscription;
         const md = sub.metadata ?? {};
         const userId = md.userId;
-        if (md.plan === 'seat') {
+        if (md.plan === 'seat' || md.plan === 'org') {
           const qty = sub.items?.data?.[0]?.quantity ?? null;
-          await p.query(
+          const updated = await p.query(
             `update subscriptions set status = $2, seats = coalesce($3, seats), current_period_end = $4 where stripe_subscription_id = $1`,
             [sub.id, statusFromStripe(sub.status), qty, periodEnd(sub)],
           );
+          // Event-ordering race: `updated` can land before `checkout.session.completed`.
+          // Metadata carries everything needed to create the row now; completed then upserts.
+          if (!updated.rowCount && userId) {
+            await p.query(
+              `insert into subscriptions (sponsor_id, provider, plan, status, seats, org_id, stripe_subscription_id, current_period_end)
+               values ($1, 'stripe', $2, $3, coalesce($4, 0), $5, $6, $7)
+               on conflict (stripe_subscription_id) do nothing`,
+              [userId, md.plan === 'org' ? 'org' : 'team', statusFromStripe(sub.status), qty, md.orgId ?? null, sub.id, periodEnd(sub)],
+            );
+          }
         } else if (userId) {
           await p.query(`update users set plan = $2 where id = $1`, [userId, isPaidStatus(sub.status) ? 'pro' : 'free']);
         }

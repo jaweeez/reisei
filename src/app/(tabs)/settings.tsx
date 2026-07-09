@@ -9,7 +9,7 @@ import { iapEnabled, restore } from '@/lib/billing/iap';
 import { setHoldTime } from '@/lib/data/client';
 import { color, space } from '@/theme';
 
-const TIER_LABEL: Record<string, string> = { free: 'Free', pro: 'Reisei Pro', team: 'Corner · Team seat' };
+const TIER_LABEL: Record<string, string> = { free: 'Free', pro: 'Reisei Pro', team: 'Corner seat', org: 'Organization' };
 const HOLD_TIMES = ['18:00', '20:00', '22:00'];
 
 export default function Settings() {
@@ -123,6 +123,15 @@ export default function Settings() {
           </View>
         )}
       </Card>
+
+      {/* ownsOrg keeps this reachable after a lapse — the dashboard carries the renew path. */}
+      {(entitlement?.tier === 'org' || entitlement?.ownsOrg) && (
+        <Card>
+          <Eyebrow>Organization</Eyebrow>
+          <Caption>Your groups, seats, and invites in one place.</Caption>
+          <Button label="Open your organization" variant="secondary" onPress={() => router.push('/org')} />
+        </Card>
+      )}
 
       <Card>
         <Eyebrow>Coach</Eyebrow>

@@ -2,11 +2,20 @@ import { router, useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useState } from 'react';
 import { Platform, Pressable, Share, StyleSheet, View } from 'react-native';
-import { Body, Button, Caption, Card, Eyebrow, Input, Mono, PostureDot, Screen, Text, Title } from '@/components';
-import { notify } from '@/lib/alerts';
+import { Body, Button, Caption, Card, Chip, Eyebrow, Input, Mono, PostureDot, Screen, Text, Title } from '@/components';
+import { confirm, notify } from '@/lib/alerts';
 import { useAuth } from '@/lib/auth/AuthProvider';
-import { ackMember, createCrew, createInvite, fetchState, joinCrew } from '@/lib/data/client';
-import type { AckKind, CrewMemberView, CrewView, HomeState, Posture } from '@/lib/data/types';
+import {
+  ackMember,
+  createCrew,
+  createInvite,
+  fetchCrewSeatPool,
+  fetchState,
+  joinCrew,
+  orgApi,
+  setCrewSeat,
+} from '@/lib/data/client';
+import { CORNER_MAX, type AckKind, type CrewMemberView, type CrewView, type HomeState, type Posture } from '@/lib/data/types';
 import { color, hitSlop, radius, space } from '@/theme';
 
 // Posture → the single contextual ack a crewmate can send.
@@ -16,19 +25,28 @@ const ACK_FOR: Record<Posture, { kind: AckKind; label: string }> = {
   dark: { kind: 'stand_up', label: 'Reach out' },
 };
 
+type SeatPool = NonNullable<Awaited<ReturnType<typeof fetchCrewSeatPool>>>;
+
 export default function Crew() {
   const { user, entitlement, refresh } = useAuth();
   const [state, setState] = useState<HomeState | null>(null);
+  // The captain's Corner-plan seat pool; null = no active Corner-seat sub.
+  const [pool, setPool] = useState<SeatPool | null>(null);
   const [newName, setNewName] = useState('');
   const [code, setCode] = useState('');
   const [joinBusy, setJoinBusy] = useState(false);
   const [createBusy, setCreateBusy] = useState(false);
   const [inviteBusy, setInviteBusy] = useState(false);
   const [acking, setAcking] = useState<string | null>(null);
+  const [seatBusy, setSeatBusy] = useState<string | null>(null);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
 
-  const load = useCallback(async () => setState(await fetchState()), []);
+  const load = useCallback(async () => {
+    const [s, p] = await Promise.all([fetchState(), fetchCrewSeatPool()]);
+    setState(s);
+    setPool(p);
+  }, []);
   useFocusEffect(
     useCallback(() => {
       void load();
@@ -62,16 +80,57 @@ export default function Crew() {
     } else if (res.error) setCreateError(res.error);
   }
 
+  async function onSeat(crew: CrewView, member: CrewMemberView) {
+    if (!pool || seatBusy) return;
+    const seated = pool.seatedUserIds.includes(member.id);
+    if (seated) {
+      const ok = await confirm('Release this seat?', `${member.name} loses Pro until re-seated.`, 'Release');
+      if (!ok) return;
+    }
+    setSeatBusy(member.id);
+    const res = await setCrewSeat(crew.id, member.id, seated ? 'release' : 'assign');
+    setSeatBusy(null);
+    if (res.data.upsell) return router.push('/paywall');
+    if (res.data.error) notify(res.data.error);
+    await load();
+  }
+
   async function onJoin() {
-    if (!code.trim()) return;
+    const trimmed = code.trim();
+    if (!trimmed) return;
     setJoinError(null);
     setJoinBusy(true);
-    const res = await joinCrew(code.trim());
-    setJoinBusy(false);
+    const res = await joinCrew(trimmed);
     if (res.crewId) {
+      setJoinBusy(false);
       setCode('');
       await load();
-    } else if (res.error) setJoinError(res.error);
+      return;
+    }
+    if (res.status === 402 || res.upsell) {
+      setJoinBusy(false);
+      return router.push('/paywall');
+    }
+    if (res.status === 404) {
+      // Not a Corner code. It may be an organization code.
+      const orgRes = await orgApi.join(trimmed);
+      setJoinBusy(false);
+      if (orgRes.ok) {
+        setCode('');
+        if (orgRes.data.cornerFull) notify("You're in. That Corner is full, the owner will place you.");
+        else if (!orgRes.data.crewId) notify("You're in. The owner will place you in a Corner.");
+        await load();
+        return;
+      }
+      if (orgRes.status === 404) {
+        setJoinError('That invite code is invalid.');
+        return;
+      }
+      setJoinError(orgRes.data.error ?? 'That invite code is invalid.');
+      return;
+    }
+    setJoinBusy(false);
+    if (res.error) setJoinError(res.error);
   }
 
   async function onInvite(crewId: string) {
@@ -97,8 +156,9 @@ export default function Crew() {
             <Body color={color.textPrimary} numberOfLines={1} style={styles.flexName}>
               {crew.name}
             </Body>
-            <Mono>{`HELD ${crew.heldCount}/${crew.memberCount}${crew.brokeCount ? ` · ${crew.brokeCount} BROKE` : ''}`}</Mono>
+            <Mono>{`HELD ${crew.heldCount}/${crew.memberCount}${crew.brokeCount ? ` · ${crew.brokeCount} BROKE` : ''} · ${crew.memberCount}/${CORNER_MAX}`}</Mono>
           </View>
+          {pool !== null && crew.isCaptain && <Mono>{`SEATS ${pool.used}/${pool.total}`}</Mono>}
           <View>
             {crew.members.map((m) => (
               <MemberRow
@@ -108,6 +168,15 @@ export default function Crew() {
                 isSelf={m.id === user?.id}
                 acking={acking === m.id}
                 onAck={() => onAck(crew.id, m)}
+                seat={
+                  pool !== null && crew.isCaptain
+                    ? {
+                        seated: pool.seatedUserIds.includes(m.id),
+                        busy: seatBusy !== null,
+                        onToggle: () => void onSeat(crew, m),
+                      }
+                    : null
+                }
               />
             ))}
           </View>
@@ -126,7 +195,7 @@ export default function Crew() {
 
       <Card>
         <Eyebrow>Start a Corner</Eyebrow>
-        <Caption>Leading a Corner is Pro. People you invite join free and check in alongside you.</Caption>
+        <Caption>Leading a Corner is Pro. Seats cover your people: everyone seated gets Pro.</Caption>
         <Input inCard placeholder="Corner name" value={newName} onChangeText={setNewName} />
         {createError && <Body color={color.actionText}>{createError}</Body>}
         <Button
@@ -147,12 +216,15 @@ function MemberRow({
   isSelf,
   acking,
   onAck,
+  seat,
 }: {
   crew: CrewView;
   member: CrewMemberView;
   isSelf: boolean;
   acking: boolean;
   onAck: () => void;
+  /** Captain seat control (null when the viewer has no seat pool or isn't captain). */
+  seat: { seated: boolean; busy: boolean; onToggle: () => void } | null;
 }) {
   const ack = ACK_FOR[member.posture];
   return (
@@ -185,6 +257,9 @@ function MemberRow({
           </Pressable>
         ))}
       {isSelf && member.acksReceived > 0 && <Mono>{`+${member.acksReceived}`}</Mono>}
+      {seat && (
+        <Chip label={seat.seated ? 'Seated' : 'Seat'} active={seat.seated} disabled={seat.busy} onPress={seat.onToggle} />
+      )}
     </View>
   );
 }

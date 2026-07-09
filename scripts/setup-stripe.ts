@@ -13,37 +13,43 @@ import Stripe from 'stripe';
 //
 // Prereq: STRIPE_SECRET_KEY set to your sk_test_… key in .env.local.
 // The premium pricing (see the monetization spec):
-//   Pro  — $6.99/mo · $49.99/yr   (individual; also sold on mobile via RevenueCat)
-//   Seat — $4.99/seat/mo · $49.99/seat/yr   (Crew/Team; quantity = seats, web only)
+//   Pro  — $6.99/mo · $49.99/yr             (individual; also sold on mobile via RevenueCat)
+//   Seat — $4.99/seat/mo · $49.99/seat/yr   (a Corner's 2–8 seats; quantity = seats, web only)
+//   Org  — $3.99/seat/mo · $39.99/seat/yr   (organization, 9+ seats, multi-Corner, web only)
 
 const CURRENCY = process.env.REISEI_CURRENCY || 'usd';
+
+type ProductKey = 'pro' | 'seat' | 'org';
 
 interface PriceSpec {
   envKey: string; // the .env var to write
   tag: string; // metadata.reisei_price — idempotency key
-  product: 'pro' | 'seat';
+  product: ProductKey;
   amount: number; // in cents
   interval: 'month' | 'year';
   nickname: string;
 }
 
-const PRODUCTS: Record<'pro' | 'seat', { name: string; description: string }> = {
-  pro: { name: 'Reisei Pro', description: 'Create & captain a crew, full history, streak insurance, widgets.' },
-  seat: { name: 'Reisei Crew Seat', description: 'A sponsored Crew/Team seat — one comped Pro membership.' },
+const PRODUCTS: Record<ProductKey, { name: string; description: string }> = {
+  pro: { name: 'Reisei Pro', description: 'Create and captain a Corner, full history, every school, the full log.' },
+  seat: { name: 'Reisei Corner Seat', description: 'A sponsored Corner seat (2 to 8) — one comped Pro membership.' },
+  org: { name: 'Reisei Org Seat', description: 'An organization seat (9+, volume pricing) — one comped Pro membership.' },
 };
 
 const PRICES: PriceSpec[] = [
   { envKey: 'STRIPE_PRICE_PRO_MONTHLY', tag: 'pro_monthly', product: 'pro', amount: 699, interval: 'month', nickname: 'Reisei Pro — Monthly' },
   { envKey: 'STRIPE_PRICE_PRO_ANNUAL', tag: 'pro_annual', product: 'pro', amount: 4999, interval: 'year', nickname: 'Reisei Pro — Annual' },
-  { envKey: 'STRIPE_PRICE_SEAT_MONTHLY', tag: 'seat_monthly', product: 'seat', amount: 499, interval: 'month', nickname: 'Reisei Crew Seat — Monthly' },
-  { envKey: 'STRIPE_PRICE_SEAT_ANNUAL', tag: 'seat_annual', product: 'seat', amount: 4999, interval: 'year', nickname: 'Reisei Crew Seat — Annual' },
+  { envKey: 'STRIPE_PRICE_SEAT_MONTHLY', tag: 'seat_monthly', product: 'seat', amount: 499, interval: 'month', nickname: 'Reisei Corner Seat — Monthly' },
+  { envKey: 'STRIPE_PRICE_SEAT_ANNUAL', tag: 'seat_annual', product: 'seat', amount: 4999, interval: 'year', nickname: 'Reisei Corner Seat — Annual' },
+  { envKey: 'STRIPE_PRICE_ORG_MONTHLY', tag: 'org_monthly', product: 'org', amount: 399, interval: 'month', nickname: 'Reisei Org Seat — Monthly' },
+  { envKey: 'STRIPE_PRICE_ORG_ANNUAL', tag: 'org_annual', product: 'org', amount: 3999, interval: 'year', nickname: 'Reisei Org Seat — Annual' },
 ];
 
 function money(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
-async function ensureProduct(stripe: Stripe, key: 'pro' | 'seat'): Promise<string> {
+async function ensureProduct(stripe: Stripe, key: ProductKey): Promise<string> {
   // list is immediately consistent (search is eventually consistent) → dedupe reliably.
   const existing = (await stripe.products.list({ active: true, limit: 100 })).data.find(
     (p) => p.metadata?.reisei_plan === key,
@@ -104,9 +110,10 @@ async function main() {
   const stripe = new Stripe(key);
   console.log(`Setting up Reisei products/prices in Stripe (${mode} mode, ${CURRENCY.toUpperCase()})…\n`);
 
-  const productIds: Record<'pro' | 'seat', string> = {
+  const productIds: Record<ProductKey, string> = {
     pro: await ensureProduct(stripe, 'pro'),
     seat: await ensureProduct(stripe, 'seat'),
+    org: await ensureProduct(stripe, 'org'),
   };
 
   const envValues: Record<string, string> = {};

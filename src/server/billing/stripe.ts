@@ -4,9 +4,10 @@ import Stripe from 'stripe';
 // Billing is optional: everything is gated on STRIPE_SECRET_KEY, and endpoints
 // return 501 when it isn't configured (the app runs on entitlements alone).
 //
-// TWO Stripe products (web rail only — mobile Pro is sold via RevenueCat/IAP):
-//   PRO  — individual "Reisei Pro"      (quantity 1)
-//   SEAT — leader-paid "Crew/Team" seat (quantity = seat count)
+// THREE Stripe products (web rail only — mobile Pro is sold via RevenueCat/IAP):
+//   PRO  — individual "Reisei Pro"        (quantity 1, $6.99/mo)
+//   SEAT — captain-paid Corner seat       (quantity 2–8, $4.99/seat: one Corner's worth)
+//   ORG  — organization seat              (quantity 9+, $3.99/seat, no ceiling: many Corners)
 //
 // Required env when billing is on:
 //   STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, EXPO_PUBLIC_APP_URL, and the price ids.
@@ -29,16 +30,36 @@ export type Interval = 'monthly' | 'annual';
 export function parseInterval(v: unknown): Interval {
   return v === 'annual' ? 'annual' : 'monthly';
 }
-export type PlanKey = 'pro' | 'seat';
+export type PlanKey = 'pro' | 'seat' | 'org';
 
 export function priceRef(plan: PlanKey, interval: Interval): string {
   if (plan === 'pro') {
     return (interval === 'annual' ? process.env.STRIPE_PRICE_PRO_ANNUAL : process.env.STRIPE_PRICE_PRO_MONTHLY) || '';
   }
+  if (plan === 'org') {
+    return (interval === 'annual' ? process.env.STRIPE_PRICE_ORG_ANNUAL : process.env.STRIPE_PRICE_ORG_MONTHLY) || '';
+  }
   return (interval === 'annual' ? process.env.STRIPE_PRICE_SEAT_ANNUAL : process.env.STRIPE_PRICE_SEAT_MONTHLY) || '';
 }
 export const proIntervals = (): Interval[] => (['monthly', 'annual'] as const).filter((i) => Boolean(priceRef('pro', i)));
 export const seatIntervals = (): Interval[] => (['monthly', 'annual'] as const).filter((i) => Boolean(priceRef('seat', i)));
+export const orgIntervals = (): Interval[] => (['monthly', 'annual'] as const).filter((i) => Boolean(priceRef('org', i)));
+
+// Seat quantity rules, in one place. A Corner is 2–8 paid seats (one Corner's worth);
+// an Organization starts where a Corner ends (9+) and has no product ceiling (999 is
+// Stripe's adjustable-quantity bound, not a promise we make in copy).
+export const SEAT_RULES: Record<PlanKey, { min: number; max: number }> = {
+  pro: { min: 1, max: 1 },
+  seat: { min: 2, max: 8 },
+  org: { min: 9, max: 999 },
+};
+
+/** Clamp a requested seat count into the plan's rules. Non-numeric input → the minimum. */
+export function clampSeats(plan: PlanKey, n: unknown): number {
+  const { min, max } = SEAT_RULES[plan];
+  const v = typeof n === 'number' && Number.isFinite(n) ? Math.floor(n) : min;
+  return Math.min(max, Math.max(min, v));
+}
 
 // Each var may hold a PRICE id (price_…) or a PRODUCT id (prod_…); resolve prod_ → its
 // default price, cached so repeat checkouts don't re-hit Stripe.

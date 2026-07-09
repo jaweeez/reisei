@@ -17,7 +17,11 @@ export interface Me {
   emailRequired?: boolean;
 }
 
-export type Tier = 'free' | 'pro' | 'team';
+export type Tier = 'free' | 'pro' | 'team' | 'org';
+
+/** Hard cap on Corner membership. Keep in sync with the check in crew_join
+ *  (db/migrations/0019_orgs.sql). */
+export const CORNER_MAX = 8;
 
 export interface Entitlement {
   tier: Tier;
@@ -26,6 +30,8 @@ export interface Entitlement {
   isCaptain: boolean;
   /** True platform admin (superuser). Gates the Settings → Admin dashboard. */
   isAdmin: boolean;
+  /** Owns an org row (any subscription status) — keeps the org dashboard reachable after a lapse. */
+  ownsOrg?: boolean;
 }
 
 // --- Admin dashboard ---
@@ -200,4 +206,48 @@ export interface JournalFeed {
 export interface JournalLogged {
   entry: JournalEntry;
   offramp: boolean;
+}
+
+// --- Organizations: 9+ seats, multiple Corners under one owner ---
+
+export interface OrgMemberView {
+  id: string;
+  name: string;
+  username: string;
+  seated: boolean;
+  /** The org Corner this member sits in, or null if not placed yet. */
+  cornerName: string | null;
+}
+
+export interface OrgCornerView {
+  id: string;
+  name: string;
+  memberCount: number;
+}
+
+export interface OrgInviteView {
+  code: string;
+  crewId: string | null;
+  cornerName: string | null;
+  createdAt: string;
+}
+
+/** GET /api/org — the owner dashboard. */
+export interface OrgView {
+  id: string;
+  name: string;
+  /** 'active' | 'trialing' | 'paused' | 'canceled' | 'none' (no plan yet). */
+  status: string;
+  seats: { total: number; used: number };
+  members: OrgMemberView[];
+  corners: OrgCornerView[];
+  invites: OrgInviteView[];
+}
+
+/** POST /api/org/join result. `cornerFull` → seated but not placed (owner will place). */
+export interface OrgJoined {
+  orgId: string;
+  crewId: string | null;
+  seated: boolean;
+  cornerFull: boolean;
 }
