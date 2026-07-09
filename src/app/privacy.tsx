@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
-import { Body, Caption, Eyebrow, Heading, Mono, Screen, Title } from '@/components';
+import { Body, Caption, Heading, Mono, Screen, ScreenHeader } from '@/components';
 import { color, space } from '@/theme';
 
 // Public privacy policy, served at /privacy (and www.reiseiapp.com/privacy on web) — the URL the
@@ -9,8 +9,10 @@ import { color, space } from '@/theme';
 
 const EMAIL = 'support@reiseiapp.com';
 
+const LINK_SLOP = { top: 14, bottom: 14, left: 12, right: 12 };
+
 function P({ children }: { children: React.ReactNode }) {
-  return <Body color={color.textBody} style={styles.p}>{children}</Body>;
+  return <Body color={color.textBody}>{children}</Body>;
 }
 function S({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -24,12 +26,7 @@ function S({ title, children }: { title: string; children: React.ReactNode }) {
 export default function Privacy() {
   return (
     <Screen>
-      <View style={styles.header}>
-        <Title>Privacy</Title>
-        <Pressable onPress={() => (router.canGoBack() ? router.back() : router.push('/landing'))} hitSlop={12}>
-          <Mono>Close</Mono>
-        </Pressable>
-      </View>
+      <ScreenHeader title="Privacy" onClose={() => (router.canGoBack() ? router.back() : router.push('/landing'))} />
       <Caption>Reisei, by Mu Works LLC. Last updated July 8, 2026.</Caption>
 
       <P>
@@ -42,15 +39,16 @@ export default function Privacy() {
         <P>
           Account: a username and a PIN (the PIN is stored only as a one-way hash, never in the clear). An email is
           optional, for account recovery. What you create in the app: your line, your daily check-ins and any notes,
-          your private log entries, your responses to the Bearing, and completed Resets. Crew: which crews you join
-          and the acknowledgements you send and receive. If you enable notifications, a device push token. Basic
-          technical data needed to run the service (for example, timezone and app version).
+          your private log entries, your responses to the Bearing, and completed Resets. Your Corner (the small crew
+          you check in with): which Corners you join and the acknowledgements you send and receive. If you enable
+          notifications, a device push token. Basic technical data needed to run the service (for example, timezone
+          and app version).
         </P>
       </S>
 
       <S title="How we use it">
         <P>
-          To run the app: record your check-ins and streak, show your crew that you showed up, and keep you signed
+          To run the app: record your check-ins and streak, show your Corner that you showed up, and keep you signed
           in. To personalize the Bearing to what you have recently written. To send you a verification or
           PIN-reset code if you add an email, and to send notifications you turn on. We do not use your data for
           advertising, and we do not sell it.
@@ -64,14 +62,14 @@ export default function Privacy() {
           MongoDB), which turn it into a short numerical representation (an embedding) and a brief written reflection.
           We use these providers under their commercial API terms, under which your text is not used to train their
           models by default. They may retain it briefly to monitor for abuse or safety, which is not model training.
-          Your log is private and is never shown to your crew.
+          Your log is private and is never shown to your Corner.
         </P>
       </S>
 
       <S title="Who we share it with">
         <P>
-          Your crew sees your daily posture (held, broke, or nothing yet) and your line. That is the point of a
-          crew. Beyond that, we share data only with the service providers that run Reisei on our behalf: hosting
+          Your Corner sees your daily posture (held, broke, or nothing yet) and your line. That is the point of a
+          Corner. Beyond that, we share data only with the service providers that run Reisei on our behalf: hosting
           (Vercel), the database (Neon), email delivery (Amazon SES), AI processing (Anthropic and Voyage AI,
           above), push notifications (Expo), and, if you buy Pro, payment processing (Stripe and RevenueCat). They
           may use it only to provide their service to us.
@@ -82,8 +80,8 @@ export default function Privacy() {
         <P>
           We keep your data while your account is active. You can delete your account at any time in Settings, under
           Danger zone: this permanently removes your account and its data (your line, check-ins, streak, log,
-          profile, and crew standing) and cannot be undone. If you captain a crew, deleting your account removes
-          that crew. Residual copies may persist in encrypted backups for a short time before they cycle out, and
+          profile, and Corner standing) and cannot be undone. If you captain a Corner, deleting your account removes
+          that Corner. Residual copies may persist in encrypted backups for a short time before they cycle out, and
           our providers may keep limited records where the law requires.
         </P>
       </S>
@@ -115,8 +113,7 @@ export default function Privacy() {
       </S>
 
       <S title="Contact">
-        <Eyebrow>Reach us</Eyebrow>
-        <Pressable onPress={() => void Linking.openURL(`mailto:${EMAIL}`)} hitSlop={8}>
+        <Pressable onPress={() => void Linking.openURL(`mailto:${EMAIL}`)} hitSlop={LINK_SLOP} accessibilityRole="link">
           <Mono color={color.actionText}>{EMAIL}</Mono>
         </Pressable>
         <Caption>Mu Works LLC</Caption>
@@ -126,7 +123,5 @@ export default function Privacy() {
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   section: { gap: space.sm, marginTop: space.xl },
-  p: { fontSize: 15, lineHeight: 23 },
 });

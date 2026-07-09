@@ -12,13 +12,15 @@ import { color, fontModules } from '@/theme';
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const [loaded] = useFonts(fontModules);
+  // Never strand the app on the splash: a font-load failure falls through to system fonts.
+  const [loaded, fontError] = useFonts(fontModules);
+  const ready = loaded || !!fontError;
 
   useEffect(() => {
-    if (loaded) SplashScreen.hideAsync();
-  }, [loaded]);
+    if (ready) SplashScreen.hideAsync();
+  }, [ready]);
 
-  if (!loaded) return null;
+  if (!ready) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

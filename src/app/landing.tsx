@@ -1,8 +1,8 @@
 import { Redirect, router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
-import { Body, Button, Caption, Card, Display, Eyebrow, Hero, Mono, Screen, Text, VialMark } from '@/components';
+import { Body, Button, Caption, Card, Display, Eyebrow, Hero, Mono, PostureDot, Screen, Text, VialMark } from '@/components';
 import { useAuth } from '@/lib/auth/AuthProvider';
-import { color, radius, space } from '@/theme';
+import { color, space } from '@/theme';
 
 // The guest entry point: a landing page, not a login form. The hero plus the mechanics,
 // then two doors: Get started (register) and Log in. Straight off the brand kit:
@@ -12,6 +12,7 @@ const FEATURES: { label: string; body: string }[] = [
   { label: 'The Line', body: `A daily check-in. An honest read on where you're actually at, not where you think you should be.` },
   { label: 'Your Corner', body: `A few people who actually know how you're doing. No performing.` },
   { label: 'The Bearing', body: 'A daily principle to steer by, from a tradition you pick. Perspective when your head gets loud.' },
+  { label: 'The Log', body: 'Put words to it. Private. It tunes what the Bearing brings you.' },
   { label: 'Reset', body: 'Sixty seconds to get out of your head and back in your body when something spikes.' },
 ];
 
@@ -30,13 +31,13 @@ export default function Landing() {
         <Text style={styles.kanji}>冷 静</Text>
         <Hero style={styles.wordmark}>Reisei</Hero>
         <Mono style={styles.tagline}>Stay level.</Mono>
-        <Caption style={styles.sub}>Composed</Caption>
+        <Mono color={color.textBody} style={styles.sub}>Composed</Mono>
       </View>
 
       {/* What it is */}
       <View style={styles.block}>
         <Eyebrow>What Reisei is</Eyebrow>
-        <Body color={color.textPrimary} style={styles.lede}>
+        <Body style={styles.lede}>
           {`Most guys run two settings: shut it down, or blow up. Reisei is the training in between: noticing what you're actually feeling, staying in your body when it hits, and working it through instead of burying it. It just happens to look like a training log.`}
         </Body>
         <Body>{`A coach, not a counselor. For the guy who'd never sign up for one.`}</Body>
@@ -46,10 +47,10 @@ export default function Landing() {
       <Card>
         <Mono>STREAK</Mono>
         <Display>Day 4</Display>
-        <Body>4-day streak. Keep it going.</Body>
+        <Body>3-day streak. Keep it going.</Body>
         <View style={styles.dots}>
           {DOTS.map((filled, i) => (
-            <View key={i} style={[styles.dot, filled && styles.dotFilled]} />
+            <PostureDot key={i} posture={filled ? 'held' : 'dark'} />
           ))}
         </View>
       </Card>
@@ -59,7 +60,7 @@ export default function Landing() {
         {FEATURES.map((f) => (
           <View key={f.label} style={styles.feature}>
             <Mono>{f.label}</Mono>
-            <Caption>{f.body}</Caption>
+            <Body>{f.body}</Body>
           </View>
         ))}
       </View>
@@ -83,13 +84,11 @@ const styles = StyleSheet.create({
   hero: { alignItems: 'center', marginTop: space.section, gap: space.sm },
   kanji: { fontSize: 20, letterSpacing: 8, color: color.textBody, marginTop: space.md },
   wordmark: { marginTop: space.xs },
-  tagline: { marginTop: space.xs },
-  sub: { marginTop: space.sm, letterSpacing: 1, textAlign: 'center' },
+  tagline: { marginTop: space.xs, fontSize: 20, lineHeight: 26, letterSpacing: 0.8, textTransform: 'none' },
+  sub: { marginTop: space.sm },
   block: { gap: space.md },
   lede: { fontSize: 18, lineHeight: 26 },
   dots: { flexDirection: 'row', gap: space.sm, marginTop: space.xs },
-  dot: { width: 20, height: 20, borderRadius: radius.pill, borderWidth: 2, borderColor: color.rule },
-  dotFilled: { backgroundColor: color.presence, borderColor: color.presence },
   features: { gap: space.lg },
   feature: { gap: space.xs, borderLeftWidth: 2, borderLeftColor: color.rule, paddingLeft: space.lg },
   cta: { gap: space.md },

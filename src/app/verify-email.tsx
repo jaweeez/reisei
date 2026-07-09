@@ -1,10 +1,10 @@
+import * as Haptics from 'expo-haptics';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, TextInput } from 'react-native';
-import { Body, Button, Caption, Screen, Title } from '@/components';
+import { Body, Button, Caption, Input, Screen, ScreenHeader, Title } from '@/components';
 import { authApi } from '@/lib/auth/client';
 import { useAuth } from '@/lib/auth/AuthProvider';
-import { color, radius, space } from '@/theme';
+import { color } from '@/theme';
 
 // The verify-email wall (new signups) and the add/change-email flow (existing users, from
 // Settings with ?change=1). Add an email, then enter the 6-digit code we send.
@@ -18,6 +18,7 @@ export default function VerifyEmail() {
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [resending, setResending] = useState(false);
 
   if (status === 'loading') return null;
   if (status === 'guest') return <Redirect href="/landing" />;
@@ -44,6 +45,7 @@ export default function VerifyEmail() {
     const res = await authApi.verifyEmailCode(code.trim());
     setBusy(false);
     if (res.ok) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       await refresh();
       router.replace('/');
     } else {
@@ -52,28 +54,28 @@ export default function VerifyEmail() {
   }
 
   async function resend() {
+    setResending(true);
     setError(null);
     setNote(null);
     const res = await authApi.resendCode();
+    setResending(false);
     if (res.ok) setNote('New code sent.');
     else setError(res.data.error ?? 'Try again in a moment.');
   }
 
   return (
     <Screen>
-      <Title>Verify your email</Title>
+      {router.canGoBack() ? <ScreenHeader title="Verify your email" /> : <Title>Verify your email</Title>}
       {step === 'email' ? (
         <>
           <Body>Add an email so you can recover your account if you forget your PIN.</Body>
-          <TextInput
+          <Input
             placeholder="Email"
-            placeholderTextColor={color.textSecondary}
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
             autoCorrect={false}
             keyboardType="email-address"
-            style={styles.input}
           />
           {error && <Body color={color.actionText}>{error}</Body>}
           <Button label="Send code" onPress={sendEmail} loading={busy} disabled={!email.trim()} />
@@ -81,19 +83,17 @@ export default function VerifyEmail() {
       ) : (
         <>
           <Body>{`Enter the 6-digit code we sent to ${user?.email ?? 'your email'}.`}</Body>
-          <TextInput
+          <Input
             placeholder="6-digit code"
-            placeholderTextColor={color.textSecondary}
             value={code}
             onChangeText={setCode}
             keyboardType="number-pad"
             maxLength={6}
-            style={styles.input}
           />
           {note && <Caption>{note}</Caption>}
           {error && <Body color={color.actionText}>{error}</Body>}
           <Button label="Verify" onPress={verify} loading={busy} disabled={code.trim().length !== 6} />
-          <Button label="Resend code" variant="ghost" onPress={resend} />
+          <Button label="Resend code" variant="ghost" onPress={resend} loading={resending} />
           <Button
             label="Change email"
             variant="ghost"
@@ -108,17 +108,3 @@ export default function VerifyEmail() {
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  input: {
-    minHeight: 52,
-    backgroundColor: color.card,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: color.rule,
-    paddingHorizontal: space.lg,
-    color: color.textPrimary,
-    fontFamily: 'IBMPlexSans_400Regular',
-    fontSize: 16,
-  },
-});

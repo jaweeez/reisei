@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { color, space } from '@/theme';
 
@@ -9,10 +9,11 @@ import { color, space } from '@/theme';
 // edge-to-edge on desktop. maxWidth 480 ≥ any phone, so native is unaffected.
 const COLUMN_MAX = 480;
 
-/** The ink page. Scrollable by default, safe-area aware, centred max-width column. */
+/** The ink page. Scrollable by default, safe-area + keyboard aware, centred max-width column. */
 export function Screen({ children, scroll = true }: { children: ReactNode; scroll?: boolean }) {
   const insets = useSafeAreaInsets();
-  const pad = { paddingTop: insets.top + space.lg, paddingBottom: insets.bottom + space.huge };
+  // Native gets the real notch inset; web reports 0, so guarantee breathing room there.
+  const pad = { paddingTop: Math.max(insets.top, space.xl) + space.lg, paddingBottom: insets.bottom + space.huge };
 
   if (!scroll) {
     return (
@@ -23,9 +24,15 @@ export function Screen({ children, scroll = true }: { children: ReactNode; scrol
   }
   return (
     <View style={styles.root}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={[styles.column, pad, styles.padX]}>{children}</View>
-      </ScrollView>
+      <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={[styles.column, pad, styles.padX]}>{children}</View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }

@@ -23,7 +23,7 @@ export default function TabsLayout() {
         tabBarStyle: { backgroundColor: color.card, borderTopColor: color.rule },
         tabBarActiveTintColor: palette.brassBright,
         tabBarInactiveTintColor: color.textSecondary,
-        tabBarLabelStyle: { fontFamily: fontFamily.mono, fontSize: 10, letterSpacing: 1 },
+        tabBarLabelStyle: { fontFamily: fontFamily.mono, fontSize: 10, letterSpacing: 1, alignSelf: 'stretch', textAlign: 'center' },
       }}
     >
       <Tabs.Screen

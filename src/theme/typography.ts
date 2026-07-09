@@ -37,9 +37,17 @@ export const type = {
   title: {
     fontFamily: fontFamily.display,
     fontSize: 30,
-    lineHeight: 30,
+    lineHeight: 29,
     letterSpacing: -0.2,
     textTransform: 'uppercase',
+    color: color.textPrimary,
+  },
+  /** The epigraph / statement role from the brand kit: Big Shoulders SemiBold, sentence
+   *  case, ~1.25 line-height. Carries the Bearing's daily quote. */
+  quote: {
+    fontFamily: fontFamily.displaySemi,
+    fontSize: 24,
+    lineHeight: 30,
     color: color.textPrimary,
   },
   heading: {

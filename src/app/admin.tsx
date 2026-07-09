@@ -1,7 +1,8 @@
-import { Redirect, router, useFocusEffect } from 'expo-router';
-import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from 'react-native';
-import { useCallback, useState } from 'react';
-import { Body, Button, Caption, Card, Eyebrow, Mono, Screen, Text, Title } from '@/components';
+import { Redirect, useFocusEffect } from 'expo-router';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useRef, useState } from 'react';
+import { Body, Button, Caption, Card, Eyebrow, Input, Mono, Screen, ScreenHeader, Text } from '@/components';
+import { confirm } from '@/lib/alerts';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { adminGrant, adminOverview, adminUsers } from '@/lib/data/admin';
 import type { AdminOverview, AdminUser } from '@/lib/data/types';
@@ -15,12 +16,17 @@ export default function Admin() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
 
+  // Latest query lives in a ref so `load` keeps a stable identity: useFocusEffect fetches
+  // once per focus instead of refetching on every keystroke. Requery via Search / submit.
+  const qRef = useRef(q);
+  qRef.current = q;
+
   const loadUsers = useCallback(async (query: string) => setUsers(await adminUsers(query)), []);
   const load = useCallback(async () => {
-    const [ov] = await Promise.all([adminOverview(), loadUsers(q)]);
+    const [ov] = await Promise.all([adminOverview(), loadUsers(qRef.current)]);
     setOverview(ov);
     setLoaded(true);
-  }, [loadUsers, q]);
+  }, [loadUsers]);
 
   useFocusEffect(
     useCallback(() => {
@@ -32,8 +38,9 @@ export default function Admin() {
   if (entitlement && !entitlement.isAdmin) return <Redirect href="/" />;
 
   async function toggle(u: AdminUser) {
-    setBusyId(u.id);
     const next = u.plan === 'pro' ? 'free' : 'pro';
+    if (next === 'free' && !(await confirm('Revoke Pro?', `Remove Pro from @${u.username}.`, 'Revoke'))) return;
+    setBusyId(u.id);
     const ok = await adminGrant(u.id, next);
     if (ok) {
       setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, plan: next } : x)));
@@ -44,7 +51,7 @@ export default function Admin() {
 
   return (
     <Screen>
-      <Title>Admin</Title>
+      <ScreenHeader title="Admin" />
 
       <Card>
         <Eyebrow>Platform</Eyebrow>
@@ -61,16 +68,16 @@ export default function Admin() {
       <Card>
         <Eyebrow>Users</Eyebrow>
         <View style={styles.searchRow}>
-          <TextInput
+          <Input
+            inCard
             placeholder="Search username or name"
-            placeholderTextColor={color.textSecondary}
             value={q}
             onChangeText={setQ}
             autoCapitalize="none"
             autoCorrect={false}
             returnKeyType="search"
             onSubmitEditing={() => void loadUsers(q)}
-            style={styles.input}
+            style={styles.searchInput}
           />
           <Button label="Search" variant="secondary" onPress={() => void loadUsers(q)} />
         </View>
@@ -80,19 +87,21 @@ export default function Admin() {
         {users.map((u) => (
           <View key={u.id} style={styles.row}>
             <View style={styles.rowMain}>
-              <Body color={color.textPrimary}>
-                {u.name}
-                {u.isAdmin ? '  ·  ADMIN' : ''}
-              </Body>
-              <Mono>{`@${u.username} · ${u.plan.toUpperCase()} · ${u.crewCount} corners · ${u.createdAt}`}</Mono>
+              <Body color={color.textPrimary}>{u.name}</Body>
+              <Mono>{`@${u.username}${u.isAdmin ? ' · ADMIN' : ''} · ${u.plan.toUpperCase()} · ${u.crewCount} corners · ${u.createdAt}`}</Mono>
             </View>
+            {/* Shared <Chip> can't host the in-flight spinner (label-only), so this is the
+                sanctioned minimal wrapper: Chip's visual language, minHeight 44, named a11y. */}
             <Pressable
-              onPress={() => toggle(u)}
+              onPress={() => void toggle(u)}
               disabled={busyId === u.id}
+              accessibilityRole="button"
+              accessibilityLabel={u.plan === 'pro' ? `Revoke Pro for ${u.name}` : `Grant Pro to ${u.name}`}
+              accessibilityState={{ disabled: busyId === u.id, busy: busyId === u.id }}
               style={[styles.chip, u.plan === 'pro' ? styles.chipRevoke : styles.chipGrant, busyId === u.id && styles.chipBusy]}
             >
               {busyId === u.id ? (
-                <ActivityIndicator color={color.action} />
+                <ActivityIndicator color={u.plan === 'pro' ? color.action : color.bg} />
               ) : (
                 <Text variant="mono" color={u.plan === 'pro' ? color.textBody : color.bg}>
                   {u.plan === 'pro' ? 'REVOKE' : 'GRANT PRO'}
@@ -102,26 +111,13 @@ export default function Admin() {
           </View>
         ))}
       </Card>
-
-      <Button label="Back" variant="ghost" onPress={() => router.back()} />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   searchRow: { flexDirection: 'row', gap: space.sm, alignItems: 'center' },
-  input: {
-    flex: 1,
-    minHeight: 52,
-    backgroundColor: color.bg,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: color.rule,
-    paddingHorizontal: space.lg,
-    color: color.textPrimary,
-    fontFamily: 'IBMPlexSans_400Regular',
-    fontSize: 16,
-  },
+  searchInput: { flex: 1 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -133,13 +129,14 @@ const styles = StyleSheet.create({
   },
   rowMain: { flex: 1, gap: 2 },
   chip: {
-    minHeight: 40,
+    minHeight: 44,
     minWidth: 96,
+    paddingVertical: space.sm,
     paddingHorizontal: space.md,
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
+    borderWidth: 1,
   },
   chipGrant: { backgroundColor: color.action, borderColor: color.action },
   chipRevoke: { backgroundColor: 'transparent', borderColor: color.rule },

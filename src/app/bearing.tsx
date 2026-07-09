@@ -1,11 +1,11 @@
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Linking, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Body, Button, Caption, Card, Eyebrow, Mono, Screen, Text, Title } from '@/components';
+import { Body, Button, Caption, Card, Chip, Eyebrow, Input, Mono, Screen, ScreenHeader, Text } from '@/components';
 import { fetchBearing, fetchBearingHistory, logBearing, setSchools } from '@/lib/data/client';
 import type { BearingHistory, BearingResponse, BearingView } from '@/lib/data/types';
-import { color, radius, space } from '@/theme';
+import { color, space } from '@/theme';
 
 // The Bearing — a daily operating principle to steer by, from the schools you follow.
 // Reisei's own wording, grounded in each school, with a link out to the source. Log a
@@ -24,8 +24,6 @@ export default function Bearing() {
     void load();
   }, [load]);
 
-  const followedCount = data?.schools.filter((s) => s.followed).length ?? 0;
-
   async function toggle(ideology: string) {
     if (!data) return;
     const followed = data.schools.filter((s) => s.followed).map((s) => s.ideology);
@@ -37,7 +35,6 @@ export default function Bearing() {
       router.push('/paywall');
       return;
     }
-    void Haptics.selectionAsync();
     await load(); // regenerate today's bearings for the new set
     setBusy(false);
   }
@@ -61,83 +58,95 @@ export default function Bearing() {
     if (next && !history) setHistory(await fetchBearingHistory());
   }
 
+  if (!data) {
+    return (
+      <Screen>
+        <ScreenHeader title="The Bearing" />
+        <Caption>Loading…</Caption>
+      </Screen>
+    );
+  }
+
+  const followedCount = data.schools.filter((s) => s.followed).length;
+
+  const picker = (
+    <Card>
+      <Eyebrow>Your schools</Eyebrow>
+      {followedCount === 0 && (
+        <Caption>Choose the schools you draw from. Each gives you one daily principle, grounded and sourced.</Caption>
+      )}
+      <View style={styles.chips}>
+        {data.schools.map((s) => (
+          <Chip key={s.ideology} label={s.label} active={s.followed} onPress={() => toggle(s.ideology)} disabled={busy} />
+        ))}
+      </View>
+      {followedCount > 0 && <Caption>Free follows up to 2 schools. Pro follows as many as you want.</Caption>}
+    </Card>
+  );
+
+  const todayCards = data.today.map((b) => (
+    <Card key={b.bearingId}>
+      <Eyebrow>{b.label}</Eyebrow>
+      {b.quote ? (
+        <View style={styles.quoteBlock}>
+          <Text variant="quote">{`“${b.quote.text}”`}</Text>
+          <Mono color={color.textSecondary}>{b.quote.ref}</Mono>
+        </View>
+      ) : null}
+      <Body color={color.textBody}>{b.principle}</Body>
+      {b.prompt ? <Body color={color.textBody}>{b.prompt}</Body> : null}
+
+      <Pressable
+        onPress={() => void Linking.openURL(b.source.url)}
+        hitSlop={8}
+        accessibilityRole="link"
+        style={styles.sourceRow}
+      >
+        <Mono color={color.actionText}>{b.quote ? 'Read it in context →' : 'Open the source →'}</Mono>
+      </Pressable>
+      <Caption>{b.source.attribution}</Caption>
+      <Caption>{b.copyright}</Caption>
+
+      {b.loggedToday ? (
+        <Mono>Logged today</Mono>
+      ) : (
+        <>
+          <Input
+            inCard
+            multiline
+            placeholder="Log your read. What it means for today…"
+            value={notes[b.bearingId] ?? ''}
+            onChangeText={(t) => setNotes((n) => ({ ...n, [b.bearingId]: t }))}
+            maxLength={400}
+          />
+          <Button
+            label="Log it"
+            onPress={() => onLog(b)}
+            loading={loggingId === b.bearingId}
+            disabled={!(notes[b.bearingId] ?? '').trim()}
+          />
+        </>
+      )}
+    </Card>
+  ));
+
   return (
     <Screen>
-      <View style={styles.header}>
-        <Title>The Bearing</Title>
-        <Pressable onPress={() => router.back()} hitSlop={12}>
-          <Mono>Close</Mono>
-        </Pressable>
-      </View>
+      <ScreenHeader title="The Bearing" />
       <Caption>A principle to steer by, from the schools you follow. Direction, not mood.</Caption>
 
-      {/* School picker */}
-      <Card>
-        <Eyebrow>Your schools</Eyebrow>
-        {followedCount === 0 && (
-          <Caption>Choose the schools you draw from. Each gives you one daily principle, grounded and sourced.</Caption>
-        )}
-        <View style={styles.chips}>
-          {data?.schools.map((s) => (
-            <Pressable
-              key={s.ideology}
-              onPress={() => toggle(s.ideology)}
-              disabled={busy}
-              style={[styles.chip, s.followed && styles.chipActive]}
-            >
-              <Text variant="mono" color={s.followed ? color.bg : color.textBody}>
-                {s.label}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-        {followedCount > 0 && <Caption>Free follows up to 2 schools. Pro follows as many as you want.</Caption>}
-      </Card>
-
-      {/* Today's bearings */}
-      {data?.today.map((b) => (
-        <Card key={b.bearingId}>
-          <Eyebrow>{b.label}</Eyebrow>
-          {b.quote ? (
-            <View style={styles.quoteBlock}>
-              <Body color={color.textPrimary} style={styles.quoteText}>{`“${b.quote.text}”`}</Body>
-              <Mono color={color.textSecondary}>{b.quote.ref}</Mono>
-            </View>
-          ) : null}
-          <Body color={color.textBody} style={styles.principle}>
-            {b.principle}
-          </Body>
-          {b.prompt ? <Body color={color.textBody}>{b.prompt}</Body> : null}
-
-          <Pressable onPress={() => void Linking.openURL(b.source.url)} hitSlop={8} style={styles.sourceRow}>
-            <Mono color={color.actionText}>{b.quote ? 'Read it in context →' : 'Open the source →'}</Mono>
-          </Pressable>
-          <Caption>{b.source.attribution}</Caption>
-          <Caption>{b.copyright}</Caption>
-
-          {b.loggedToday ? (
-            <Mono>Logged today</Mono>
-          ) : (
-            <>
-              <TextInput
-                placeholder="Log your read. What it means for today…"
-                placeholderTextColor={color.textSecondary}
-                value={notes[b.bearingId] ?? ''}
-                onChangeText={(t) => setNotes((n) => ({ ...n, [b.bearingId]: t }))}
-                maxLength={400}
-                multiline
-                style={styles.input}
-              />
-              <Button
-                label="Log it"
-                onPress={() => onLog(b)}
-                loading={loggingId === b.bearingId}
-                disabled={!(notes[b.bearingId] ?? '').trim()}
-              />
-            </>
-          )}
-        </Card>
-      ))}
+      {/* Return visits lead with today's bearing; first-run leads with the picker. */}
+      {followedCount > 0 ? (
+        <>
+          {todayCards}
+          {picker}
+        </>
+      ) : (
+        <>
+          {picker}
+          {todayCards}
+        </>
+      )}
 
       {followedCount > 0 && (
         <>
@@ -159,7 +168,7 @@ export default function Bearing() {
                 <Card>
                   <Eyebrow>Pro</Eyebrow>
                   <Caption>You have entries older than 30 days. Go Pro to keep the full log.</Caption>
-                  <Button label="Go Pro" variant="secondary" onPress={() => router.push('/paywall')} />
+                  <Button label="Go Pro" onPress={() => router.push('/paywall')} />
                 </Card>
               )}
             </View>
@@ -171,31 +180,8 @@ export default function Bearing() {
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
-  chip: {
-    paddingVertical: space.sm,
-    paddingHorizontal: space.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: color.rule,
-  },
-  chipActive: { backgroundColor: color.action, borderColor: color.action },
-  principle: { fontSize: 16, lineHeight: 24 },
   quoteBlock: { gap: space.xs, paddingLeft: space.md, borderLeftWidth: 2, borderLeftColor: color.action },
-  quoteText: { fontSize: 20, lineHeight: 28 },
   sourceRow: { paddingVertical: space.xs },
   logList: { gap: space.lg },
-  input: {
-    minHeight: 72,
-    backgroundColor: color.bg,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: color.rule,
-    padding: space.lg,
-    color: color.textPrimary,
-    fontFamily: 'IBMPlexSans_400Regular',
-    fontSize: 16,
-    textAlignVertical: 'top',
-  },
 });

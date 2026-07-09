@@ -24,7 +24,14 @@ export function CrisisCard({ alert = false }: { alert?: boolean }) {
       </Body>
       <View style={styles.lines}>
         {RESOURCES.map((r) => (
-          <Pressable key={r.label} style={styles.line} onPress={() => void Linking.openURL(r.url)} hitSlop={6}>
+          <Pressable
+            key={r.label}
+            style={styles.line}
+            onPress={() => void Linking.openURL(r.url)}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={`${r.label}. ${r.sub}`}
+          >
             <View style={styles.lineText}>
               <Body color={color.textPrimary}>{r.label}</Body>
               <Caption>{r.sub}</Caption>

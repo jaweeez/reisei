@@ -1,11 +1,11 @@
 import { useCallback, useState } from 'react';
-import { useFocusEffect } from 'expo-router';
-import { StyleSheet, TextInput, View } from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
+import { StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Body, Button, Caption, Card, CrisisCard, Eyebrow, Mono, Screen, Title } from '@/components';
+import { Body, Button, Caption, Card, CrisisCard, Eyebrow, Input, Mono, Screen, Title } from '@/components';
 import { fetchJournal, logJournal } from '@/lib/data/client';
 import type { JournalFeed } from '@/lib/data/types';
-import { color, radius, space } from '@/theme';
+import { color, space } from '@/theme';
 
 // The log — put words to it, private. Free-form entries no one else sees. Each entry quietly
 // tunes what the Bearing brings you the next time something's actually up (never shown here).
@@ -18,6 +18,7 @@ export default function Log() {
   const [body, setBody] = useState('');
   const [busy, setBusy] = useState(false);
   const [offramp, setOfframp] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => setFeed(await fetchJournal()), []);
   useFocusEffect(
@@ -34,9 +35,12 @@ export default function Log() {
     setBusy(false);
     if (res) {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setError(null);
       setBody('');
       setOfframp(res.offramp);
       await load();
+    } else {
+      setError('Could not save. Try again.');
     }
   }
 
@@ -46,15 +50,18 @@ export default function Log() {
       <Caption>Put words to it. Private. No one sees this but you.</Caption>
 
       <Card>
-        <TextInput
-          placeholder="What's actually going on? Say the real version."
-          placeholderTextColor={color.textSecondary}
-          value={body}
-          onChangeText={setBody}
-          maxLength={2000}
+        <Input
+          inCard
           multiline
-          style={styles.input}
+          placeholder="What's actually going on? Say the real version."
+          value={body}
+          onChangeText={(t) => {
+            setBody(t);
+            setError(null);
+          }}
+          maxLength={2000}
         />
+        {error && <Body color={color.actionText}>{error}</Body>}
         <Button label="Log it" onPress={onLog} loading={busy} disabled={!body.trim()} />
       </Card>
 
@@ -76,27 +83,16 @@ export default function Log() {
           <Card>
             <Eyebrow>Pro</Eyebrow>
             <Caption>You have entries older than 30 days. Go Pro to keep the full log.</Caption>
+            <Button label="Go Pro" onPress={() => router.push('/paywall')} />
           </Card>
         )}
       </View>
 
-      <CrisisCard />
+      {!offramp && <CrisisCard />}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   list: { gap: space.lg },
-  input: {
-    minHeight: 120,
-    backgroundColor: color.bg,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: color.rule,
-    padding: space.lg,
-    color: color.textPrimary,
-    fontFamily: 'IBMPlexSans_400Regular',
-    fontSize: 16,
-    textAlignVertical: 'top',
-  },
 });

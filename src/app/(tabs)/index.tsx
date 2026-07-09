@@ -1,12 +1,13 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Body, Button, Caption, Card, CrewDots, Display, Eyebrow, Mono, Screen, Text, Title, VialMark } from '@/components';
+import { Body, Button, Caption, Card, Chip, CrewDots, Display, Eyebrow, Input, Mono, Nudge, Screen, Title, VialMark } from '@/components';
 import { checkIn, createLine, fetchState } from '@/lib/data/client';
+import { confirm } from '@/lib/alerts';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import type { HomeState, LineKind } from '@/lib/data/types';
-import { color, radius, space } from '@/theme';
+import { color, space } from '@/theme';
 
 export default function Today() {
   const { user } = useAuth();
@@ -41,7 +42,7 @@ export default function Today() {
 
   async function onLog(verdict: 'held' | 'broke') {
     if (verdict === 'broke') {
-      const ok = await confirmBreak();
+      const ok = await confirm('Log a break?', 'Your streak resets to zero. Your integrity count stays.', 'Log it');
       if (!ok) return;
     }
     setBusy(true);
@@ -56,8 +57,16 @@ export default function Today() {
     }
   }
 
+  if (!state) {
+    return (
+      <Screen>
+        <Caption>Loading…</Caption>
+      </Screen>
+    );
+  }
+
   // ── Empty state: draw your line ──
-  if (state && !state.line) {
+  if (!state.line) {
     return (
       <Screen>
         <View style={styles.head}>
@@ -65,18 +74,17 @@ export default function Today() {
           <Title style={{ marginTop: space.lg }}>Draw your line</Title>
         </View>
         <Card>
-          <Caption>One standard you hold yourself to. An honest slip beats going quiet, so log it. Your Corner respects the report.</Caption>
-          <TextInput
+          <Body>One standard you hold yourself to. An honest slip beats going quiet, so log it. Your Corner respects the report.</Body>
+          <Input
+            inCard
             placeholder='e.g. "In bed by 23:00" · "No drinking"'
-            placeholderTextColor={color.textSecondary}
             value={statement}
             onChangeText={setStatement}
             maxLength={80}
-            style={styles.input}
           />
           <View style={styles.kindRow}>
-            <KindChip label="A line I won't cross" active={kind === 'abstain'} onPress={() => setKind('abstain')} />
-            <KindChip label="A bar I'll hold" active={kind === 'hold'} onPress={() => setKind('hold')} />
+            <Chip label="A line I won't cross" active={kind === 'abstain'} onPress={() => setKind('abstain')} style={{ flex: 1 }} />
+            <Chip label="A bar I'll hold" active={kind === 'hold'} onPress={() => setKind('hold')} style={{ flex: 1 }} />
           </View>
           {error && <Body color={color.actionText}>{error}</Body>}
           <Button label="Draw the line" onPress={onDraw} loading={busy} disabled={statement.trim().length < 2} />
@@ -85,9 +93,9 @@ export default function Today() {
     );
   }
 
-  const line = state?.line;
-  const s = state?.streak;
-  const verdict = state?.todayVerdict ?? null;
+  const line = state.line;
+  const s = state.streak;
+  const verdict = state.todayVerdict ?? null;
   const message =
     verdict === 'held'
       ? 'Logged. You showed up today.'
@@ -101,26 +109,14 @@ export default function Today() {
 
   return (
     <Screen>
-      {state?.todayNudge && (
-        <View style={styles.banner}>
-          <Mono color={color.actionText}>Coach</Mono>
-          <Body color={color.textPrimary}>{state.todayNudge}</Body>
-        </View>
-      )}
-
-      {user && !user.emailRequired && !user.emailVerified && (
-        <Pressable style={styles.banner} onPress={() => router.push('/verify-email')}>
-          <Mono color={color.actionText}>Account</Mono>
-          <Body color={color.textPrimary}>Add an email so you can recover your account.</Body>
-        </Pressable>
-      )}
+      {state.todayNudge && <Nudge label="Coach" body={state.todayNudge} />}
 
       <Card>
         <Eyebrow>Your line</Eyebrow>
         <Display>{line?.statement ?? ''}</Display>
         {s && (
           <Mono>
-            {`STREAK ${String(s.current).padStart(2, '0')} · LONGEST ${String(s.longest).padStart(2, '0')} · BROKE ${String(
+            {`STREAK ${String(s.current).padStart(2, '0')} · BEST ${String(s.longest).padStart(2, '0')} · BROKE ${String(
               s.breaks,
             ).padStart(2, '0')} · INTEGRITY ${String(s.integrity).padStart(2, '0')}`}
           </Mono>
@@ -134,13 +130,12 @@ export default function Today() {
 
         {verdict === null ? (
           <>
-            <TextInput
+            <Input
+              inCard
               placeholder="How did today actually go?"
-              placeholderTextColor={color.textSecondary}
               value={note}
               onChangeText={setNote}
               maxLength={140}
-              style={styles.input}
             />
             <Button label="Held it" onPress={() => onLog('held')} loading={busy} />
             <Button label="It slipped" variant="ghost" onPress={() => onLog('broke')} />
@@ -151,99 +146,61 @@ export default function Today() {
       </Card>
 
       {verdict === 'broke' && (
-        <Pressable style={styles.logNudge} onPress={() => router.push('/log')}>
-          <Mono color={color.actionText}>The log</Mono>
-          <Body color={color.textPrimary}>Rough one today. Put words to it. Private, just for you.</Body>
-        </Pressable>
+        <Nudge
+          label="The log"
+          body="Rough one today. Put words to it. Private, just for you."
+          onPress={() => router.push('/log')}
+        />
       )}
 
-      {state && (
-        <Pressable style={styles.bearing} onPress={() => router.push('/bearing')}>
-          <Mono color={color.actionText}>Today's bearing</Mono>
-          {!state.bearing ? (
-            <Body color={color.textPrimary}>Set your bearing →</Body>
-          ) : state.bearing.principle ? (
-            <>
-              <Body color={color.textPrimary}>{state.bearing.principle}</Body>
-              <Mono>{`${state.bearing.label}${state.bearing.loggedToday ? ' · LOGGED' : ''}`}</Mono>
-            </>
-          ) : (
-            <Body color={color.textPrimary}>{`Open today's bearing · ${state.bearing.label} →`}</Body>
-          )}
-        </Pressable>
+      {user && !user.emailRequired && !user.emailVerified && (
+        <Nudge label="Account" body="Add an email so you can recover your account." onPress={() => router.push('/verify-email')} />
       )}
+
+      <Nudge variant="quiet" label="Today's bearing" onPress={() => router.push('/bearing')}>
+        {!state.bearing ? (
+          <Body color={color.textPrimary}>Set your bearing →</Body>
+        ) : state.bearing.principle ? (
+          <>
+            <Body color={color.textPrimary}>{state.bearing.principle}</Body>
+            <Mono>{`${state.bearing.label}${state.bearing.loggedToday ? ' · LOGGED' : ''}`}</Mono>
+          </>
+        ) : (
+          <Body color={color.textPrimary}>{`Open today's bearing · ${state.bearing.label} →`}</Body>
+        )}
+      </Nudge>
 
       <Button
-        label={state?.resetToday ? 'Reset · run it again' : 'Reset · 60s to level'}
-        variant="ghost"
+        label={state.resetToday ? 'Reset · run it again' : 'Reset · 60s to level'}
+        variant="secondary"
         onPress={() => router.push('/reset')}
       />
 
-      {state && state.crews.length > 0 ? (
+      {state.crews.length > 0 ? (
         state.crews.map((crew) => (
           <Card key={crew.id}>
             <View style={styles.crewHead}>
-              <Body color={color.textPrimary}>{crew.name}</Body>
+              <Body color={color.textPrimary} numberOfLines={1} style={{ flex: 1, marginRight: space.sm }}>
+                {crew.name}
+              </Body>
               <Mono>{`HELD ${crew.heldCount}/${crew.memberCount}${crew.brokeCount ? ` · ${crew.brokeCount} BROKE` : ''}`}</Mono>
             </View>
             <CrewDots members={crew.members} />
           </Card>
         ))
       ) : (
-        <Caption>No Corner yet. Join one, or go Pro to lead your own. You hold your line in front of people who know what you committed to.</Caption>
+        <Card>
+          <Eyebrow>Your Corner</Eyebrow>
+          <Caption>No Corner yet. Join one, or go Pro to lead your own. You hold your line in front of people who know what you committed to.</Caption>
+        </Card>
       )}
     </Screen>
   );
 }
 
-function KindChip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
-  return (
-    <Pressable onPress={onPress} style={[styles.chip, active && styles.chipActive]}>
-      <Text variant="caption" color={active ? color.bg : color.textBody}>
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
-function confirmBreak(): Promise<boolean> {
-  const msg = 'Log a break? Your streak resets to zero. Your integrity count stays.';
-  if (Platform.OS === 'web') return Promise.resolve(typeof window !== 'undefined' ? window.confirm(msg) : true);
-  return new Promise((res) =>
-    Alert.alert('Log a break?', msg, [
-      { text: 'Cancel', style: 'cancel', onPress: () => res(false) },
-      { text: 'Log it', style: 'destructive', onPress: () => res(true) },
-    ]),
-  );
-}
-
 const styles = StyleSheet.create({
   head: { alignItems: 'center', marginTop: space.section },
-  banner: { gap: space.xs, padding: space.lg, borderRadius: radius.md, borderLeftWidth: 3, borderLeftColor: color.action, backgroundColor: color.actionSoft },
-  bearing: { gap: space.xs, padding: space.lg, borderRadius: radius.md, borderWidth: 1, borderColor: color.rule, backgroundColor: color.card },
-  logNudge: { gap: space.xs, padding: space.lg, borderRadius: radius.md, borderLeftWidth: 3, borderLeftColor: color.action, backgroundColor: color.actionSoft },
   mark: { alignItems: 'center', paddingVertical: space.md },
   crewHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  input: {
-    minHeight: 52,
-    backgroundColor: color.bg,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: color.rule,
-    paddingHorizontal: space.lg,
-    color: color.textPrimary,
-    fontFamily: 'IBMPlexSans_400Regular',
-    fontSize: 16,
-  },
   kindRow: { flexDirection: 'row', gap: space.sm },
-  chip: {
-    flex: 1,
-    paddingVertical: space.md,
-    paddingHorizontal: space.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: color.rule,
-    alignItems: 'center',
-  },
-  chipActive: { backgroundColor: color.action, borderColor: color.action },
 });

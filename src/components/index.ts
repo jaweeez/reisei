@@ -1,7 +1,11 @@
 export { Text, Hero, Display, Title, Heading, Body, Caption, Mono, Eyebrow } from './Text';
 export { Screen } from './Screen';
+export { ScreenHeader } from './ScreenHeader';
 export { Button } from './Button';
 export { Card } from './Card';
+export { Input } from './Input';
+export { Chip } from './Chip';
+export { Nudge } from './Nudge';
 export { VialMark } from './VialMark';
-export { CrewDots } from './CrewDots';
+export { CrewDots, PostureDot, postureStyle } from './CrewDots';
 export { CrisisCard } from './CrisisCard';

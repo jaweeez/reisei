@@ -1,12 +1,13 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Linking, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
-import { Body, Button, Caption, Card, CrisisCard, Eyebrow, Mono, Screen, Text, Title } from '@/components';
+import { Linking, Pressable, StyleSheet, View } from 'react-native';
+import { Body, Button, Caption, Card, Chip, CrisisCard, Eyebrow, Input, Mono, Screen, Title } from '@/components';
+import { confirm } from '@/lib/alerts';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { billingApi } from '@/lib/billing/client';
 import { iapEnabled, restore } from '@/lib/billing/iap';
 import { setHoldTime } from '@/lib/data/client';
-import { color, radius, space } from '@/theme';
+import { color, space } from '@/theme';
 
 const TIER_LABEL: Record<string, string> = { free: 'Free', pro: 'Reisei Pro', team: 'Corner · Team seat' };
 const HOLD_TIMES = ['18:00', '20:00', '22:00'];
@@ -15,6 +16,10 @@ export default function Settings() {
   const { user, entitlement, logout, refresh, deleteAccount } = useAuth();
   const [portalAvailable, setPortalAvailable] = useState(false);
   const [hold, setHold] = useState(user?.holdTime ?? '20:00');
+  const [holdBusy, setHoldBusy] = useState(false);
+  const [portalBusy, setPortalBusy] = useState(false);
+  const [restoreBusy, setRestoreBusy] = useState(false);
+  const [logoutBusy, setLogoutBusy] = useState(false);
   const [delOpen, setDelOpen] = useState(false);
   const [delPin, setDelPin] = useState('');
   const [delBusy, setDelBusy] = useState(false);
@@ -28,18 +33,46 @@ export default function Settings() {
   }, [user?.holdTime]);
 
   async function openPortal() {
-    const res = await billingApi.portal();
-    if (res.data.url) void Linking.openURL(res.data.url);
+    setPortalBusy(true);
+    try {
+      const res = await billingApi.portal();
+      if (res.data.url) void Linking.openURL(res.data.url);
+    } finally {
+      setPortalBusy(false);
+    }
+  }
+
+  async function onRestore() {
+    setRestoreBusy(true);
+    try {
+      await restore();
+    } finally {
+      setRestoreBusy(false);
+    }
+  }
+
+  async function onLogout() {
+    setLogoutBusy(true);
+    try {
+      await logout();
+    } finally {
+      setLogoutBusy(false);
+    }
   }
 
   async function pickHold(t: string) {
     setHold(t);
-    await setHoldTime(t);
-    await refresh();
+    setHoldBusy(true);
+    try {
+      await setHoldTime(t);
+      await refresh();
+    } finally {
+      setHoldBusy(false);
+    }
   }
 
   async function onDelete() {
-    if (!(await confirmDelete())) return;
+    if (!(await confirm('Delete account?', 'Delete your account permanently? This erases everything and cannot be undone.', 'Delete'))) return;
     setDelBusy(true);
     setDelErr(null);
     const err = await deleteAccount(delPin);
@@ -85,10 +118,20 @@ export default function Settings() {
           <Button label="Go Pro" onPress={() => router.push('/paywall')} />
         ) : (
           <View style={styles.stack}>
-            {portalAvailable && <Button label="Manage billing" variant="secondary" onPress={openPortal} />}
-            {iapEnabled() && <Button label="Restore purchases" variant="ghost" onPress={() => restore()} />}
+            {portalAvailable && <Button label="Manage billing" variant="secondary" onPress={openPortal} loading={portalBusy} />}
+            {iapEnabled() && <Button label="Restore purchases" variant="ghost" onPress={onRestore} loading={restoreBusy} />}
           </View>
         )}
+      </Card>
+
+      <Card>
+        <Eyebrow>Coach</Eyebrow>
+        <Caption>When to nudge you if the line's still open. The coach stays quiet on a held day.</Caption>
+        <View style={styles.chips}>
+          {HOLD_TIMES.map((t) => (
+            <Chip key={t} label={t} active={hold === t} onPress={() => void pickHold(t)} disabled={holdBusy} style={{ flex: 1 }} />
+          ))}
+        </View>
       </Card>
 
       <Card>
@@ -103,6 +146,8 @@ export default function Settings() {
         <Button label="Open the Ledger" variant="secondary" onPress={() => router.push('/ledger')} />
       </Card>
 
+      <CrisisCard />
+
       {entitlement?.isAdmin && (
         <Card>
           <Eyebrow>Admin</Eyebrow>
@@ -112,45 +157,28 @@ export default function Settings() {
       )}
 
       <Card>
-        <Eyebrow>Coach</Eyebrow>
-        <Caption>When to nudge you if the line's still open. The coach stays quiet on a held day.</Caption>
-        <View style={styles.chips}>
-          {HOLD_TIMES.map((t) => (
-            <Pressable key={t} onPress={() => pickHold(t)} style={[styles.chip, hold === t && styles.chipActive]}>
-              <Text variant="mono" color={hold === t ? color.bg : color.textBody}>
-                {t}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      </Card>
-
-      <CrisisCard />
-
-      <Card>
         <Eyebrow>Session</Eyebrow>
-        <Button label="Log out" variant="secondary" onPress={logout} />
+        <Button label="Log out" variant="secondary" onPress={onLogout} loading={logoutBusy} />
       </Card>
 
       <Card>
-        <Eyebrow>Danger zone</Eyebrow>
+        <Eyebrow>Delete account</Eyebrow>
         <Caption>Delete your account and everything in it: your line, streak, log, and Corner standing. This cannot be undone.</Caption>
         {!delOpen ? (
-          <Button label="Delete account" variant="ghost" onPress={() => setDelOpen(true)} />
+          <Button label="Delete" variant="ghost" onPress={() => setDelOpen(true)} />
         ) : (
           <>
-            <TextInput
+            <Input
+              inCard
               placeholder="Enter your PIN to confirm"
-              placeholderTextColor={color.textSecondary}
               value={delPin}
               onChangeText={setDelPin}
               keyboardType="number-pad"
               secureTextEntry
               maxLength={8}
-              style={styles.input}
             />
             {delErr && <Body color={color.actionText}>{delErr}</Body>}
-            <Button label="Delete permanently" onPress={onDelete} loading={delBusy} disabled={delPin.length < 4} />
+            <Button label="Delete permanently" variant="secondary" onPress={onDelete} loading={delBusy} disabled={delPin.length < 4} />
             <Button
               label="Cancel"
               variant="ghost"
@@ -164,48 +192,17 @@ export default function Settings() {
         )}
       </Card>
 
-      <Pressable onPress={() => router.push('/privacy')} hitSlop={8} style={styles.legal}>
+      <Pressable onPress={() => router.push('/privacy')} hitSlop={8} accessibilityRole="link" style={styles.legal}>
         <Mono>Privacy policy</Mono>
       </Pressable>
 
-      <Caption>{`Reisei · Mu Works LLC${Platform.OS !== 'web' ? ' · IAP via RevenueCat' : ''}`}</Caption>
+      <Caption center>Reisei · Mu Works LLC</Caption>
     </Screen>
-  );
-}
-
-function confirmDelete(): Promise<boolean> {
-  const msg = 'Delete your account permanently? This erases everything and cannot be undone.';
-  if (Platform.OS === 'web') return Promise.resolve(typeof window !== 'undefined' ? window.confirm(msg) : true);
-  return new Promise((res) =>
-    Alert.alert('Delete account?', msg, [
-      { text: 'Cancel', style: 'cancel', onPress: () => res(false) },
-      { text: 'Delete', style: 'destructive', onPress: () => res(true) },
-    ]),
   );
 }
 
 const styles = StyleSheet.create({
   stack: { gap: 12 },
   legal: { alignItems: 'center', paddingVertical: space.sm },
-  input: {
-    minHeight: 52,
-    backgroundColor: color.bg,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: color.rule,
-    paddingHorizontal: space.lg,
-    color: color.textPrimary,
-    fontFamily: 'IBMPlexSans_400Regular',
-    fontSize: 16,
-  },
   chips: { flexDirection: 'row', gap: space.sm },
-  chip: {
-    flex: 1,
-    paddingVertical: space.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: color.rule,
-    alignItems: 'center',
-  },
-  chipActive: { backgroundColor: color.action, borderColor: color.action },
 });
