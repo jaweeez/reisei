@@ -13,7 +13,10 @@ export const palette = {
   inkSoft: '#2A2725',
   /** steel — body text on dark, quiet dividers. */
   steel: '#8A8F8C',
-  /** a darker steel for borders and secondary rules. */
+  /** a lightened steel for body copy on ink — readability feedback said steel ran dim
+   *  at 16px (~5.3:1); this reads ~6.7:1 while staying in the steel family. */
+  steelBright: '#9CA19E',
+  /** a darker steel for borders and secondary rules. NOT for text on ink (~2.7:1). */
   steelDark: '#5B6063',
   /** bone — the light surface / paper stock. */
   bone: '#EDE8DE',
@@ -35,8 +38,10 @@ export const color = {
   card: palette.inkSoft,
 
   textPrimary: palette.bone,
-  textBody: palette.steel,
-  textSecondary: palette.steelDark,
+  /** Default reading text on ink. Uses the brighter steel to keep paragraph copy clear. */
+  textBody: palette.steelBright,
+  /** Supporting labels, placeholders, and inactive navigation remain readable on ink. */
+  textSecondary: palette.steel,
 
   /** hairline rules and quiet dividers on ink */
   rule: 'rgba(237,232,222,0.10)',
