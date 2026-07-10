@@ -8,15 +8,16 @@ import { color, space } from '@/theme';
 // actually collects, including that what you write in the log is processed by third-party AI.
 
 const EMAIL = 'support@reiseiapp.com';
+const DELETE_REQUEST_URL = `mailto:${EMAIL}?subject=Reisei%20account%20deletion%20request`;
 
 const LINK_SLOP = { top: 14, bottom: 14, left: 12, right: 12 };
 
 function P({ children }: { children: React.ReactNode }) {
   return <Body color={color.textBody}>{children}</Body>;
 }
-function S({ title, children }: { title: string; children: React.ReactNode }) {
+function S({ title, children, nativeID }: { title: string; children: React.ReactNode; nativeID?: string }) {
   return (
-    <View style={styles.section}>
+    <View nativeID={nativeID} style={styles.section}>
       <Heading>{title}</Heading>
       {children}
     </View>
@@ -27,13 +28,18 @@ export default function Privacy() {
   return (
     <Screen>
       <ScreenHeader title="Privacy" onClose={() => (router.canGoBack() ? router.back() : router.push('/landing'))} />
-      <Caption>Reisei, by Mu Works LLC. Last updated July 8, 2026.</Caption>
+      <Caption>Reisei, by Mu Works LLC. Last updated July 10, 2026.</Caption>
 
       <P>
         This explains what Reisei collects, why, and the control you have over it. Reisei is a composure-training
         app: you hold a daily standard in front of a small crew. Keep it plain: we collect what the app needs to
         work, nothing we sell.
       </P>
+
+      <Pressable style={styles.deleteCallout} onPress={() => void Linking.openURL(DELETE_REQUEST_URL)} hitSlop={LINK_SLOP} accessibilityRole="link">
+        <Mono color={color.actionText}>ACCOUNT DELETION</Mono>
+        <Caption>Need to delete your account after uninstalling? Send a deletion request →</Caption>
+      </Pressable>
 
       <S title="What we collect">
         <P>
@@ -76,7 +82,7 @@ export default function Privacy() {
         </P>
       </S>
 
-      <S title="Keeping and deleting your data">
+      <S title="Keeping and deleting your data" nativeID="delete-account">
         <P>
           We keep your data while your account is active. You can delete your account at any time in Settings, under
           Danger zone: this permanently removes your account and its data (your line, check-ins, streak, log,
@@ -84,6 +90,18 @@ export default function Privacy() {
           that Corner. Residual copies may persist in encrypted backups for a short time before they cycle out, and
           our providers may keep limited records where the law requires.
         </P>
+        <P>
+          To request account deletion after you have uninstalled Reisei, use the request link below. Include your
+          Reisei username and, if you added one, the email on the account. We may ask you to verify ownership before
+          we permanently delete the account and associated data.
+        </P>
+        <Pressable onPress={() => void Linking.openURL(DELETE_REQUEST_URL)} hitSlop={LINK_SLOP} accessibilityRole="link">
+          <Mono color={color.actionText}>Request account deletion →</Mono>
+        </Pressable>
+        <Caption>
+          Deleting an account does not cancel a Google Play subscription. Cancel any active subscription separately in
+          Google Play.
+        </Caption>
       </S>
 
       <S title="Security">
@@ -124,4 +142,5 @@ export default function Privacy() {
 
 const styles = StyleSheet.create({
   section: { gap: space.sm, marginTop: space.xl },
+  deleteCallout: { gap: space.xs, marginTop: space.lg, paddingLeft: space.md, borderLeftWidth: 2, borderLeftColor: color.action },
 });
