@@ -58,6 +58,31 @@ export interface AdminUser {
 export type Verdict = 'held' | 'broke';
 export type LineKind = 'abstain' | 'hold';
 
+/** The common places a line gets loose. Kept finite so the next move can be useful. */
+export const RECOVERY_FRICTIONS = ['time', 'energy', 'conflict', 'avoidance'] as const;
+export type RecoveryFriction = (typeof RECOVERY_FRICTIONS)[number];
+
+export const RECOVERY_FRICTION_LABEL: Record<RecoveryFriction, string> = {
+  time: 'Time got away',
+  energy: 'Low energy',
+  conflict: 'Conflict hit',
+  avoidance: 'I avoided it',
+};
+
+export const RECOVERY_MOVES = [
+  'Set the cue earlier',
+  'Make the first step smaller',
+  'Clear one obstacle tonight',
+  'Tell your Corner',
+] as const;
+
+/** A private adjustment made after an honest break, carried into the next day. */
+export interface RecoveryPlan {
+  sourceDate: string;
+  friction: RecoveryFriction;
+  move: string;
+}
+
 /** The one standard the user holds. */
 export interface LineView {
   id: string;
@@ -116,6 +141,8 @@ export interface HomeState {
   todayNudge: string | null;
   /** Whether the user has completed a Reset today. */
   resetToday: boolean;
+  /** Today's recovery plan after a break, plus yesterday's plan to carry into today. */
+  recovery: { today: RecoveryPlan | null; carry: RecoveryPlan | null };
   /** The Today card for The Bearing. null → user follows no school. An empty `principle`
    *  → follows a school but today's bearing isn't generated yet (open the screen to draw it). */
   bearing: BearingToday | null;

@@ -2,7 +2,7 @@ import { currentUser } from '@/server/auth/session';
 import { withUser } from '@/server/db';
 import { localDateFor } from '@/server/streak';
 import { IDEOLOGY_LABEL } from '@/data/corpus/types';
-import type { CrewView, HomeState, LineView, Verdict } from '@/lib/data/types';
+import type { CrewView, HomeState, LineView, RecoveryPlan, Verdict } from '@/lib/data/types';
 
 // GET /api/state → everything Today + Crew need, RLS-filtered: the active line,
 // today's verdict, the streak (+ integrity), and each crew with per-member posture.
@@ -14,7 +14,7 @@ export async function GET(req: Request) {
     const me = (await c.query(`select tz from users where id = current_app_user()`)).rows[0] as { tz?: string } | undefined;
     const today = localDateFor(me?.tz ?? 'UTC');
 
-    const [lineRes, todayRes, streakRes, crewsRes, membersRes, memberLinesRes, verdictsRes, acksRes, nudgeRes, resetRes, bearingRes] =
+    const [lineRes, todayRes, streakRes, crewsRes, membersRes, memberLinesRes, verdictsRes, acksRes, nudgeRes, resetRes, bearingRes, recoveryTodayRes, recoveryCarryRes] =
       await Promise.all([
       c.query(
         `select id, statement, kind, to_char(start_local_date,'YYYY-MM-DD') as "startLocalDate"
@@ -43,6 +43,20 @@ export async function GET(req: Request) {
              on ub.user_id = current_app_user() and ub.ideology = us.ideology and ub.local_date = $1
           where us.user_id = current_app_user()
           order by us.sort, us.created_at
+          limit 1`,
+        [today],
+      ),
+      c.query(
+        `select to_char(source_local_date, 'YYYY-MM-DD') as "sourceDate", friction, move
+           from recovery_plans
+          where user_id = current_app_user() and source_local_date = $1
+          limit 1`,
+        [today],
+      ),
+      c.query(
+        `select to_char(source_local_date, 'YYYY-MM-DD') as "sourceDate", friction, move
+           from recovery_plans
+          where user_id = current_app_user() and source_local_date = ($1::date - 1)
           limit 1`,
         [today],
       ),
@@ -105,6 +119,10 @@ export async function GET(req: Request) {
       crews,
       todayNudge: (nudgeRes.rows[0]?.body as string) ?? null,
       resetToday: (resetRes.rowCount ?? 0) > 0,
+      recovery: {
+        today: (recoveryTodayRes.rows[0] as RecoveryPlan | undefined) ?? null,
+        carry: (recoveryCarryRes.rows[0] as RecoveryPlan | undefined) ?? null,
+      },
       bearing: bearingRow
         ? {
             ideology: bearingRow.ideology,

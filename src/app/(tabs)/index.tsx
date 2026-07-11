@@ -3,10 +3,17 @@ import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Body, Button, Caption, Card, Chip, CrewDots, Display, Eyebrow, Input, Mono, Nudge, Screen, Title, VialMark } from '@/components';
-import { checkIn, createLine, fetchState } from '@/lib/data/client';
+import { checkIn, createLine, fetchState, planRecovery } from '@/lib/data/client';
 import { confirm } from '@/lib/alerts';
 import { useAuth } from '@/lib/auth/AuthProvider';
-import type { HomeState, LineKind } from '@/lib/data/types';
+import {
+  RECOVERY_FRICTION_LABEL,
+  RECOVERY_FRICTIONS,
+  RECOVERY_MOVES,
+  type HomeState,
+  type LineKind,
+  type RecoveryFriction,
+} from '@/lib/data/types';
 import { color, space } from '@/theme';
 
 export default function Today() {
@@ -14,6 +21,9 @@ export default function Today() {
   const [state, setState] = useState<HomeState | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
+  const [friction, setFriction] = useState<RecoveryFriction | null>(null);
+  const [move, setMove] = useState('');
+  const [recoveryError, setRecoveryError] = useState<string | null>(null);
   // draw-a-line form
   const [statement, setStatement] = useState('');
   const [kind, setKind] = useState<LineKind>('abstain');
@@ -54,6 +64,25 @@ export default function Today() {
       );
       setNote('');
       await load();
+    }
+  }
+
+  async function onPlanRecovery() {
+    if (!friction || !move) {
+      setRecoveryError('Name what got in the way, then choose one move.');
+      return;
+    }
+    setBusy(true);
+    setRecoveryError(null);
+    const res = await planRecovery(friction, move);
+    setBusy(false);
+    if (res.plan) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setFriction(null);
+      setMove('');
+      await load();
+    } else {
+      setRecoveryError(res.error ?? 'Could not set tomorrow\'s move.');
     }
   }
 
@@ -110,6 +139,12 @@ export default function Today() {
   return (
     <Screen>
       {state.todayNudge && <Nudge label="Coach" body={state.todayNudge} />}
+      {state.recovery.carry && (
+        <Nudge
+          label="Your move today"
+          body={`${RECOVERY_FRICTION_LABEL[state.recovery.carry.friction]}. ${state.recovery.carry.move}.`}
+        />
+      )}
 
       <Card>
         <Eyebrow>Your line</Eyebrow>
@@ -146,11 +181,41 @@ export default function Today() {
       </Card>
 
       {verdict === 'broke' && (
-        <Nudge
-          label="The log"
-          body="Rough one today. Put words to it. Private, just for you."
-          onPress={() => router.push('/log')}
-        />
+        state.recovery.today ? (
+          <Card>
+            <Eyebrow>Tomorrow's move</Eyebrow>
+            <Body color={color.textPrimary}>{state.recovery.today.move}</Body>
+            <Caption>{`${RECOVERY_FRICTION_LABEL[state.recovery.today.friction]}. Set for tomorrow.`}</Caption>
+          </Card>
+        ) : (
+          <Card>
+            <Eyebrow>Turn the miss</Eyebrow>
+            <Body>What got in the way?</Body>
+            <View style={styles.chipGrid}>
+              {RECOVERY_FRICTIONS.map((value) => (
+                <Chip
+                  key={value}
+                  label={RECOVERY_FRICTION_LABEL[value]}
+                  active={friction === value}
+                  onPress={() => setFriction(value)}
+                  style={styles.chipHalf}
+                />
+              ))}
+            </View>
+            <Body>What is your move tomorrow?</Body>
+            <View style={styles.chipGrid}>
+              {RECOVERY_MOVES.map((option) => (
+                <Chip key={option} label={option} active={move === option} onPress={() => setMove(option)} style={styles.chipHalf} />
+              ))}
+            </View>
+            {recoveryError && <Body color={color.actionText}>{recoveryError}</Body>}
+            <Button label="Set tomorrow's move" onPress={onPlanRecovery} loading={busy} disabled={!friction || !move} />
+          </Card>
+        )
+      )}
+
+      {verdict === 'broke' && (
+        <Nudge label="The log" body="Rough one today. Put words to it. Private, just for you." onPress={() => router.push('/log')} />
       )}
 
       {user && !user.emailRequired && !user.emailVerified && (
@@ -203,4 +268,6 @@ const styles = StyleSheet.create({
   mark: { alignItems: 'center', paddingVertical: space.md },
   crewHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   kindRow: { flexDirection: 'row', gap: space.sm },
+  chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  chipHalf: { flexGrow: 1, flexBasis: '46%' },
 });

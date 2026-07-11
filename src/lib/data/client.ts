@@ -10,6 +10,8 @@ import type {
   LineView,
   OrgJoined,
   OrgView,
+  RecoveryFriction,
+  RecoveryPlan,
   SchoolView,
   StreakView,
   Verdict,
@@ -34,6 +36,18 @@ export interface CheckInResult {
 export async function checkIn(verdict: Verdict = 'held', note?: string): Promise<CheckInResult | null> {
   const res = await api<CheckInResult>('/api/checkin', { method: 'POST', body: JSON.stringify({ verdict, note }) });
   return res.ok ? res.data : null;
+}
+
+/** Save the one adjustment that carries an honest break into tomorrow. */
+export async function planRecovery(
+  friction: RecoveryFriction,
+  move: string,
+): Promise<{ plan?: RecoveryPlan; error?: string }> {
+  const res = await api<{ plan?: RecoveryPlan; error?: string }>('/api/recovery', {
+    method: 'POST',
+    body: JSON.stringify({ friction, move }),
+  });
+  return res.data;
 }
 
 export async function createLine(statement: string, kind: LineKind = 'abstain'): Promise<{ line?: LineView; error?: string }> {
