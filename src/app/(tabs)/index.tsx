@@ -2,7 +2,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Body, Button, Caption, Card, Chip, CrewDots, Display, Eyebrow, Input, Mono, Nudge, Screen, Title, VialMark } from '@/components';
+import { Body, Button, Caption, Card, Chip, CrewDots, Display, Eyebrow, Input, Mono, Nudge, Screen, Text, Title, VialMark } from '@/components';
 import { checkIn, createLine, fetchState, planRecovery } from '@/lib/data/client';
 import { confirm } from '@/lib/alerts';
 import { useAuth } from '@/lib/auth/AuthProvider';
@@ -146,6 +146,36 @@ export default function Today() {
         />
       )}
 
+      {state.bearing ? (
+        <Card style={styles.bearingCard}>
+          <Eyebrow>{`Today's bearing · ${state.bearing.label}`}</Eyebrow>
+          {state.bearing.principle ? (
+            <>
+              {state.bearing.quote && (
+                <View style={styles.quoteBlock}>
+                  <Text variant="quote">{`“${state.bearing.quote.text}”`}</Text>
+                  <Mono color={color.textSecondary}>{state.bearing.quote.ref}</Mono>
+                </View>
+              )}
+              <Body color={color.textPrimary}>{state.bearing.principle}</Body>
+              {state.bearing.prompt && <Body>{`Try: ${state.bearing.prompt}`}</Body>}
+              <Button
+                label={state.bearing.loggedToday ? 'Open your bearing' : 'Take the bearing'}
+                variant="secondary"
+                onPress={() => router.push('/bearing')}
+              />
+            </>
+          ) : (
+            <>
+              <Body>Draw today’s principle before the day gets loud.</Body>
+              <Button label="Draw today’s bearing" onPress={() => router.push('/bearing')} />
+            </>
+          )}
+        </Card>
+      ) : (
+        <Nudge label="The Bearing" body="Choose a school and draw a principle to steer by today." onPress={() => router.push('/bearing')} />
+      )}
+
       <Card>
         <Eyebrow>Your line</Eyebrow>
         <Display>{line?.statement ?? ''}</Display>
@@ -222,19 +252,6 @@ export default function Today() {
         <Nudge label="Account" body="Add an email so you can recover your account." onPress={() => router.push('/verify-email')} />
       )}
 
-      <Nudge variant="quiet" label="Today's bearing" onPress={() => router.push('/bearing')}>
-        {!state.bearing ? (
-          <Body color={color.textPrimary}>Set your bearing →</Body>
-        ) : state.bearing.principle ? (
-          <>
-            <Body color={color.textPrimary}>{state.bearing.principle}</Body>
-            <Mono>{`${state.bearing.label}${state.bearing.loggedToday ? ' · LOGGED' : ''}`}</Mono>
-          </>
-        ) : (
-          <Body color={color.textPrimary}>{`Open today's bearing · ${state.bearing.label} →`}</Body>
-        )}
-      </Nudge>
-
       <Button
         label={state.resetToday ? 'Reset · run it again' : 'Reset · 60s to level'}
         variant="secondary"
@@ -270,4 +287,6 @@ const styles = StyleSheet.create({
   kindRow: { flexDirection: 'row', gap: space.sm },
   chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   chipHalf: { flexGrow: 1, flexBasis: '46%' },
+  bearingCard: { borderColor: color.ruleStrong },
+  quoteBlock: { gap: space.xs, paddingLeft: space.md, borderLeftWidth: 2, borderLeftColor: color.action },
 });

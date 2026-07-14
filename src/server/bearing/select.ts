@@ -49,3 +49,22 @@ export function chooseQuoteRef({ rotationRef, candidates, strength }: ChooseQuot
   }
   return bestRef;
 }
+
+/** A personalized match must never make the reader see yesterday's anchor again. Prefer the
+ * date rotation when it differs; if it does not, take the next distinct curated quote. */
+export function avoidConsecutiveQuoteRef(
+  preferredRef: string,
+  rotationRef: string,
+  candidates: QuoteCandidate[],
+  previousRef: string | null,
+): string {
+  if (!previousRef || preferredRef !== previousRef) return preferredRef;
+  if (rotationRef !== previousRef && candidates.some((c) => c.ref === rotationRef)) return rotationRef;
+
+  const start = Math.max(candidates.findIndex((c) => c.ref === preferredRef), 0);
+  for (let offset = 1; offset < candidates.length; offset += 1) {
+    const candidate = candidates[(start + offset) % candidates.length];
+    if (candidate && candidate.ref !== previousRef) return candidate.ref;
+  }
+  return preferredRef; // A one-quote school has no distinct alternative.
+}

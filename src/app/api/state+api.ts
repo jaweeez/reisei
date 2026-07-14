@@ -3,6 +3,7 @@ import { withUser } from '@/server/db';
 import { localDateFor } from '@/server/streak';
 import { IDEOLOGY_LABEL } from '@/data/corpus/types';
 import type { CrewView, HomeState, LineView, RecoveryPlan, Verdict } from '@/lib/data/types';
+import { resolveUserBearing } from '@/server/bearing/resolve';
 
 // GET /api/state → everything Today + Crew need, RLS-filtered: the active line,
 // today's verdict, the streak (+ integrity), and each crew with per-member posture.
@@ -10,7 +11,7 @@ export async function GET(req: Request) {
   const userId = await currentUser(req);
   if (!userId) return Response.json({ error: 'unauthenticated' }, { status: 401 });
 
-  const state = await withUser<HomeState>(userId, async (c) => {
+  let state = await withUser<HomeState>(userId, async (c) => {
     const me = (await c.query(`select tz from users where id = current_app_user()`)).rows[0] as { tz?: string } | undefined;
     const today = localDateFor(me?.tz ?? 'UTC');
 
@@ -36,7 +37,7 @@ export async function GET(req: Request) {
       // The primary followed school (by sort) + this user's resolved bearing for it, if the
       // Bearing screen has been opened today (else principle is null → the "open it" prompt).
       c.query(
-        `select us.ideology, ub.principle,
+        `select us.ideology, ub.principle, ub.prompt, ub.quote_text, ub.quote_ref,
                 exists(select 1 from bearing_logs bl where bl.user_id = current_app_user() and bl.user_bearing_id = ub.id) as logged
            from user_schools us
            left join user_bearings ub
@@ -64,7 +65,9 @@ export async function GET(req: Request) {
 
     const line = (lineRes.rows[0] as LineView | undefined) ?? null;
     const s = streakRes.rows[0] ?? {};
-    const bearingRow = bearingRes.rows[0] as { ideology: string; principle: string | null; logged: boolean } | undefined;
+    const bearingRow = bearingRes.rows[0] as {
+      ideology: string; principle: string | null; prompt: string | null; quote_text: string | null; quote_ref: string | null; logged: boolean;
+    } | undefined;
     const lineByUser = new Map<string, string>(memberLinesRes.rows.map((r) => [r.user_id as string, r.statement as string]));
     const verdictByUser = new Map<string, Verdict>(verdictsRes.rows.map((r) => [r.user_id as string, r.verdict as Verdict]));
     const acksReceived = new Map<string, number>();
@@ -128,11 +131,30 @@ export async function GET(req: Request) {
             ideology: bearingRow.ideology,
             label: IDEOLOGY_LABEL[bearingRow.ideology as keyof typeof IDEOLOGY_LABEL] ?? bearingRow.ideology,
             principle: bearingRow.principle ?? '',
+            quote: bearingRow.quote_text ? { text: bearingRow.quote_text, ref: bearingRow.quote_ref ?? '' } : null,
+            prompt: bearingRow.prompt ?? null,
             loggedToday: !!bearingRow.logged,
           }
         : null,
     };
   });
+
+  // Today leads with the primary bearing, so resolve it here rather than making the reader
+  // visit its dedicated screen first. Failure leaves the card in its safe, draw-state.
+  if (state.bearing && !state.bearing.principle) {
+    const resolved = await resolveUserBearing(userId, state.bearing.ideology, state.localDate).catch(() => null);
+    if (resolved) {
+      state = {
+        ...state,
+        bearing: {
+          ...state.bearing,
+          principle: resolved.principle,
+          quote: resolved.quote,
+          prompt: resolved.prompt,
+        },
+      };
+    }
+  }
 
   return Response.json(state);
 }

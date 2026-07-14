@@ -185,8 +185,12 @@ export interface BearingView {
 export interface BearingToday {
   ideology: string;
   label: string;
-  /** The principle text, or '' when it isn't generated yet. */
+  /** The principle text, or '' if generation was unavailable. */
   principle: string;
+  /** The day's anchoring quote, kept prominent on Today. */
+  quote: { text: string; ref: string } | null;
+  /** One concrete move from the bearing. */
+  prompt: string | null;
   loggedToday: boolean;
 }
 

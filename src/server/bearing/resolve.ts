@@ -5,7 +5,7 @@ import { getOrCreateBearing } from './store';
 import { generateBearing } from './generate';
 import { getSchool, quoteForToday, schoolQuotes, stateForToday } from './schools';
 import { bestState, quoteSims } from './vectors';
-import { chooseQuoteRef } from './select';
+import { avoidConsecutiveQuoteRef, chooseQuoteRef } from './select';
 
 // Resolve the Bearing a given user gets today, per followed school. The shared `bearings` table
 // stays the NEUTRAL daily cache (one generation per school per day, reused by everyone). Here we
@@ -67,6 +67,24 @@ async function readUserBearing(userId: string, ideology: string, localDate: stri
   });
 }
 
+/** The previous resolved anchor for this user and school. The shared date cache cannot enforce
+ * this because a live profile match may make two consecutive days choose the same quote. */
+async function readPreviousQuoteRef(userId: string, ideology: string, localDate: string): Promise<string | null> {
+  return withUser(userId, async (c) => {
+    const row = (
+      await c.query(
+        `select quote_ref
+           from user_bearings
+          where user_id = current_app_user() and ideology = $1 and local_date < $2 and quote_ref is not null
+          order by local_date desc
+          limit 1`,
+        [ideology, localDate],
+      )
+    ).rows[0] as { quote_ref?: string } | undefined;
+    return row?.quote_ref ?? null;
+  });
+}
+
 async function storeUserBearing(
   userId: string,
   ideology: string,
@@ -110,13 +128,14 @@ export async function resolveUserBearing(userId: string, ideology: string, local
   const school = getSchool(ideology);
   const rotationQuote = school ? quoteForToday(school, localDate) : null;
   const rotationState = stateForToday(localDate);
+  const quotes = school ? schoolQuotes(ideology) : [];
+  const previousQuoteRef = await readPreviousQuoteRef(userId, ideology, localDate);
   let chosenQuote = rotationQuote;
   let chosenState = rotationState;
 
   // Let a live struggle move the anchor quote and the felt-state (only when we have a signal).
   const signal = school ? await struggleVector(userId) : null;
   if (signal && school) {
-    const quotes = schoolQuotes(ideology);
     if (quotes.length) {
       const simByRef = new Map((await quoteSims(ideology, signal.vec)).map((s) => [s.ref, s.sim]));
       const candidates = quotes.map((q) => ({ ref: q.ref, sim: simByRef.get(q.ref) ?? 0 }));
@@ -128,6 +147,16 @@ export async function resolveUserBearing(userId: string, ideology: string, local
       const bs = await bestState(signal.vec);
       if (bs) chosenState = bs;
     }
+  }
+
+  if (chosenQuote && quotes.length) {
+    const safeRef = avoidConsecutiveQuoteRef(
+      chosenQuote.ref,
+      rotationQuote?.ref ?? quotes[0]!.ref,
+      quotes.map((quote) => ({ ref: quote.ref, sim: 0 })),
+      previousQuoteRef,
+    );
+    chosenQuote = quotes.find((quote) => quote.ref === safeRef) ?? chosenQuote;
   }
 
   const personalized =

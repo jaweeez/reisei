@@ -99,6 +99,16 @@ describe('school quotes', () => {
     expect(seen.size).toBeGreaterThan(1);
   });
 
+  it('never repeats a date-rotated quote on consecutive days', () => {
+    for (const school of SCHOOLS) {
+      for (let day = 1; day < 28; day += 1) {
+        const date = `2026-07-${String(day).padStart(2, '0')}`;
+        const next = `2026-07-${String(day + 1).padStart(2, '0')}`;
+        expect(quoteForToday(school, date)?.ref).not.toBe(quoteForToday(school, next)?.ref);
+      }
+    }
+  });
+
   it('no quote reproduces copyrighted-translation phrasings we deliberately avoided', () => {
     const all = SCHOOLS.flatMap((s) => Array.from({ length: 12 }, (_, i) => quoteForToday(s, `2026-${String(i + 1).padStart(2, '0')}-15`)?.text ?? ''));
     const joined = all.join(' | ').toLowerCase();

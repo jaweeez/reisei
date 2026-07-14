@@ -1,5 +1,5 @@
 /// <reference types="jest" />
-import { chooseQuoteRef, type QuoteCandidate } from './select';
+import { avoidConsecutiveQuoteRef, chooseQuoteRef, type QuoteCandidate } from './select';
 
 // The school's quotes with their similarity to a struggle signal. "b" is the clear match.
 const CANDIDATES: QuoteCandidate[] = [
@@ -52,5 +52,19 @@ describe('chooseQuoteRef', () => {
       { ref: 'b', sim: 0.4 },
     ];
     expect(chooseQuoteRef({ rotationRef: 'a', candidates: flat, strength: 0.85 })).toBe('a');
+  });
+});
+
+describe('avoidConsecutiveQuoteRef', () => {
+  it('keeps a personalized anchor when it differs from yesterday', () => {
+    expect(avoidConsecutiveQuoteRef('b', 'a', CANDIDATES, 'a')).toBe('b');
+  });
+
+  it('falls back to today\'s rotation when a profile match repeats yesterday\'s anchor', () => {
+    expect(avoidConsecutiveQuoteRef('b', 'a', CANDIDATES, 'b')).toBe('a');
+  });
+
+  it('advances to a distinct quote when the rotation is also yesterday\'s anchor', () => {
+    expect(avoidConsecutiveQuoteRef('a', 'a', CANDIDATES, 'a')).toBe('b');
   });
 });
