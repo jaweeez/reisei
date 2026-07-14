@@ -7,7 +7,12 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "env": { "EXPO_PUBLIC_API_URL": "https://www.reiseiapp.com" },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://www.reiseiapp.com",
+        "EXPO_PUBLIC_REVENUECAT_TEST_KEY": "test_NDlwmOizqCXeLEdnyulQOQRgLUK",
+        "EXPO_PUBLIC_REVENUECAT_USE_TEST_STORE": "true",
+        "EXPO_PUBLIC_REVENUECAT_ENTITLEMENT": "reisei_pro"
+      },
       "ios": { "simulator": true },
       "android": { "buildType": "apk" }
     },
@@ -25,7 +30,7 @@
   },
   "submit": {
     "production": {
-      "android": { "track": "internal" },
+      "android": { "track": "production" },
       "ios": { "ascAppId": "6788981232" }
     }
   }
