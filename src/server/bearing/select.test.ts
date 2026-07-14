@@ -1,5 +1,5 @@
 /// <reference types="jest" />
-import { avoidConsecutiveQuoteRef, chooseQuoteRef, type QuoteCandidate } from './select';
+import { chooseQuoteRef, selectUnusedQuoteRef, type QuoteCandidate } from './select';
 
 // The school's quotes with their similarity to a struggle signal. "b" is the clear match.
 const CANDIDATES: QuoteCandidate[] = [
@@ -55,16 +55,16 @@ describe('chooseQuoteRef', () => {
   });
 });
 
-describe('avoidConsecutiveQuoteRef', () => {
-  it('keeps a personalized anchor when it differs from yesterday', () => {
-    expect(avoidConsecutiveQuoteRef('b', 'a', CANDIDATES, 'a')).toBe('b');
+describe('selectUnusedQuoteRef', () => {
+  it('keeps the personalized anchor when the reader has not seen it', () => {
+    expect(selectUnusedQuoteRef('b', 'a', CANDIDATES, new Set(['a']))).toBe('b');
   });
 
-  it('falls back to today\'s rotation when a profile match repeats yesterday\'s anchor', () => {
-    expect(avoidConsecutiveQuoteRef('b', 'a', CANDIDATES, 'b')).toBe('a');
+  it('falls back to a different unshown quote when the profile match is already used', () => {
+    expect(selectUnusedQuoteRef('b', 'a', CANDIDATES, new Set(['b']))).toBe('a');
   });
 
-  it('advances to a distinct quote when the rotation is also yesterday\'s anchor', () => {
-    expect(avoidConsecutiveQuoteRef('a', 'a', CANDIDATES, 'a')).toBe('b');
+  it('never reuses a quote after every candidate has been seen', () => {
+    expect(selectUnusedQuoteRef('a', 'a', CANDIDATES, new Set(['a', 'b', 'c']))).toBeNull();
   });
 });

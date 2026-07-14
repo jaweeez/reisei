@@ -479,6 +479,222 @@
       "url": "https://suttacentral.net/dhp",
       "theme": "impermanence",
       "action": "extract"
+    },
+    {
+      "id": "modern-stoicism-resources",
+      "ideology": "modern-stoicism",
+      "org": "Modern Stoicism",
+      "title": "Modern Stoicism resources",
+      "url": "https://modernstoicism.com/resources/",
+      "theme": "values",
+      "action": "crawl-basic"
+    },
+    {
+      "id": "cbt-nhs",
+      "ideology": "cbt",
+      "org": "NHS",
+      "title": "Cognitive behavioural therapy (CBT)",
+      "url": "https://www.nhs.uk/mental-health/talking-therapies-medicine-treatments/talking-therapies-and-counselling/cognitive-behavioural-therapy-cbt/",
+      "theme": "reframing",
+      "action": "extract"
+    },
+    {
+      "id": "act-acbs",
+      "ideology": "act",
+      "org": "Association for Contextual Behavioral Science",
+      "title": "Acceptance and Commitment Therapy",
+      "url": "https://contextualscience.org/act",
+      "theme": "values",
+      "action": "extract"
+    },
+    {
+      "id": "islam-ali-quran",
+      "ideology": "islam",
+      "org": "Wikisource — Maulana Muhammad Ali translation (1917)",
+      "title": "The Holy Qur'an",
+      "url": "https://en.wikisource.org/wiki/The_Holy_Qur%27an_(Maulana_Muhammad_Ali)",
+      "theme": "patience",
+      "action": "crawl-basic"
+    },
+    {
+      "id": "existentialism-sep",
+      "ideology": "existentialism",
+      "org": "Stanford Encyclopedia of Philosophy",
+      "title": "Existentialism",
+      "url": "https://plato.stanford.edu/entries/existentialism/",
+      "theme": "freedom",
+      "action": "extract"
+    },
+    {
+      "id": "sto-seneca-letters",
+      "ideology": "stoicism",
+      "org": "Wikisource — Seneca (public domain)",
+      "title": "Moral Letters to Lucilius",
+      "url": "https://en.wikisource.org/wiki/Moral_letters_to_Lucilius",
+      "theme": "adversity",
+      "action": "crawl-basic"
+    },
+    {
+      "id": "sto-epictetus-discourses",
+      "ideology": "stoicism",
+      "org": "Wikisource — Epictetus (public domain)",
+      "title": "Discourses of Epictetus",
+      "url": "https://en.wikisource.org/wiki/Discourses_of_Epictetus",
+      "theme": "control",
+      "action": "crawl-basic"
+    },
+    {
+      "id": "modern-stoicism-week",
+      "ideology": "modern-stoicism",
+      "org": "Modern Stoicism",
+      "title": "Stoic Week",
+      "url": "https://modernstoicism.com/stoic-week/",
+      "theme": "habits",
+      "action": "crawl-basic"
+    },
+    {
+      "id": "cbt-nhs-reframe",
+      "ideology": "cbt",
+      "org": "NHS Every Mind Matters",
+      "title": "Reframing unhelpful thoughts",
+      "url": "https://www.nhs.uk/every-mind-matters/mental-wellbeing-tips/how-to-reframe-unhelpful-thoughts/",
+      "theme": "reframing",
+      "action": "extract"
+    },
+    {
+      "id": "cbt-cci-depression",
+      "ideology": "cbt",
+      "org": "Centre for Clinical Interventions, Government of Western Australia",
+      "title": "Depression information sheets and workbooks",
+      "url": "https://www.cci.health.wa.gov.au/Resources/Looking-After-Yourself/Depression",
+      "theme": "action",
+      "action": "extract"
+    },
+    {
+      "id": "act-acbs-resources",
+      "ideology": "act",
+      "org": "Association for Contextual Behavioral Science",
+      "title": "ACT resources",
+      "url": "https://contextualscience.org/resources",
+      "theme": "acceptance",
+      "action": "crawl-basic"
+    },
+    {
+      "id": "bud-satipatthana",
+      "ideology": "buddhism",
+      "org": "SuttaCentral — Bhikkhu Sujato (CC0)",
+      "title": "Satipatthana Sutta",
+      "url": "https://suttacentral.net/mn10/en/sujato",
+      "theme": "present",
+      "action": "extract"
+    },
+    {
+      "id": "bud-anger",
+      "ideology": "buddhism",
+      "org": "SuttaCentral — Bhikkhu Sujato (CC0)",
+      "title": "The Simile of the Saw",
+      "url": "https://suttacentral.net/mn21/en/sujato",
+      "theme": "compassion",
+      "action": "extract"
+    },
+    {
+      "id": "dao-zhuangzi",
+      "ideology": "daoism",
+      "org": "Chinese Text Project",
+      "title": "Zhuangzi",
+      "url": "https://ctext.org/zhuangzi",
+      "theme": "balance",
+      "action": "crawl-basic"
+    },
+    {
+      "id": "dao-liezi",
+      "ideology": "daoism",
+      "org": "Chinese Text Project",
+      "title": "Liezi",
+      "url": "https://ctext.org/liezi",
+      "theme": "simplicity",
+      "action": "crawl-basic"
+    },
+    {
+      "id": "hin-upanishads",
+      "ideology": "hinduism",
+      "org": "Sacred Texts Archive (public-domain translations)",
+      "title": "The Upanishads",
+      "url": "https://sacred-texts.com/hin/upan/index.htm",
+      "theme": "self-mastery",
+      "action": "crawl-basic"
+    },
+    {
+      "id": "hin-ramayana",
+      "ideology": "hinduism",
+      "org": "Sacred Texts Archive (public-domain translations)",
+      "title": "The Ramayana",
+      "url": "https://sacred-texts.com/hin/rama/index.htm",
+      "theme": "duty",
+      "action": "crawl-basic"
+    },
+    {
+      "id": "chr-kjv-gutenberg",
+      "ideology": "christianity",
+      "org": "Project Gutenberg — King James Bible (public domain)",
+      "title": "The King James Bible",
+      "url": "https://www.gutenberg.org/files/10/10-h/10-h.htm",
+      "theme": "faith",
+      "action": "extract"
+    },
+    {
+      "id": "islam-ali-expansion",
+      "ideology": "islam",
+      "org": "Wikisource — Maulana Muhammad Ali translation (1917)",
+      "title": "The Expansion",
+      "url": "https://en.wikisource.org/wiki/The_Holy_Qur%27an_(Maulana_Muhammad_Ali)/94._The_Expansion",
+      "theme": "patience",
+      "action": "extract"
+    },
+    {
+      "id": "islam-ali-cow",
+      "ideology": "islam",
+      "org": "Wikisource — Maulana Muhammad Ali translation (1917)",
+      "title": "The Cow",
+      "url": "https://en.wikisource.org/wiki/The_Holy_Qur%27an_(Maulana_Muhammad_Ali)/2._The_Cow",
+      "theme": "reliance",
+      "action": "extract"
+    },
+    {
+      "id": "epi-menoeceus",
+      "ideology": "epicureanism",
+      "org": "Epicurus.net (public domain)",
+      "title": "Letter to Menoeceus",
+      "url": "https://epicurus.net/en/menoeceus.html",
+      "theme": "desire",
+      "action": "extract"
+    },
+    {
+      "id": "epi-vatican-sayings",
+      "ideology": "epicureanism",
+      "org": "Wikisource — Epicurus (public domain)",
+      "title": "Vatican Sayings",
+      "url": "https://en.wikisource.org/wiki/Vatican_Sayings",
+      "theme": "friendship",
+      "action": "extract"
+    },
+    {
+      "id": "exi-zarathustra",
+      "ideology": "existentialism",
+      "org": "Standard Ebooks — Nietzsche (public domain)",
+      "title": "Thus Spake Zarathustra",
+      "url": "https://standardebooks.org/ebooks/friedrich-nietzsche/thus-spake-zarathustra/thomas-common/text/prologue",
+      "theme": "meaning",
+      "action": "extract"
+    },
+    {
+      "id": "exi-twilight",
+      "ideology": "existentialism",
+      "org": "Project Gutenberg — Nietzsche (public domain)",
+      "title": "Twilight of the Idols",
+      "url": "https://www.gutenberg.org/files/52263/52263-h/52263-h.htm",
+      "theme": "choice",
+      "action": "extract"
     }
   ]
 }

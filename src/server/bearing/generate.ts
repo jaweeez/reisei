@@ -36,7 +36,9 @@ export async function generateBearing(ideology: string, localDate: string, steer
   // A steer aims the read at the user's live struggle; absent it, the shared date rotation. The
   // state also seeds retrieval, so steering it pulls corpus teachings that speak to the struggle.
   const state = steer?.state ?? stateForToday(localDate);
-  const quote = steer?.quote ?? quoteForToday(school, localDate);
+  // `null` is intentional: the reader has exhausted this school's displayed quote set, so
+  // generate a source-grounded Bearing without repeating one of those quotes.
+  const quote = steer && 'quote' in steer ? steer.quote ?? null : quoteForToday(school, localDate);
   const retrieved = await searchTeachings(`${theme} ${state}`.trim() || school.label, ideology, 5);
   // Prefer the day's quote as the link-out (its exact passage); else the school's canonical source.
   const source = quote ? { url: quote.url, title: quote.ref, attribution: school.source.attribution } : pickSource(retrieved, school);

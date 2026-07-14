@@ -5,7 +5,7 @@ import { getOrCreateBearing } from './store';
 import { generateBearing } from './generate';
 import { getSchool, quoteForToday, schoolQuotes, stateForToday } from './schools';
 import { bestState, quoteSims } from './vectors';
-import { avoidConsecutiveQuoteRef, chooseQuoteRef } from './select';
+import { chooseQuoteRef, selectUnusedQuoteRef } from './select';
 
 // Resolve the Bearing a given user gets today, per followed school. The shared `bearings` table
 // stays the NEUTRAL daily cache (one generation per school per day, reused by everyone). Here we
@@ -67,21 +67,20 @@ async function readUserBearing(userId: string, ideology: string, localDate: stri
   });
 }
 
-/** The previous resolved anchor for this user and school. The shared date cache cannot enforce
- * this because a live profile match may make two consecutive days choose the same quote. */
-async function readPreviousQuoteRef(userId: string, ideology: string, localDate: string): Promise<string | null> {
+/** Quote refs already displayed to this reader for this school. The shared date cache cannot
+ * enforce this because a live profile match is resolved per user. */
+async function readUsedQuoteRefs(userId: string, ideology: string, localDate: string): Promise<Set<string>> {
   return withUser(userId, async (c) => {
-    const row = (
+    const rows = (
       await c.query(
         `select quote_ref
            from user_bearings
           where user_id = current_app_user() and ideology = $1 and local_date < $2 and quote_ref is not null
-          order by local_date desc
-          limit 1`,
+          order by local_date asc`,
         [ideology, localDate],
       )
-    ).rows[0] as { quote_ref?: string } | undefined;
-    return row?.quote_ref ?? null;
+    ).rows as { quote_ref: string }[];
+    return new Set(rows.map((row) => row.quote_ref));
   });
 }
 
@@ -129,7 +128,7 @@ export async function resolveUserBearing(userId: string, ideology: string, local
   const rotationQuote = school ? quoteForToday(school, localDate) : null;
   const rotationState = stateForToday(localDate);
   const quotes = school ? schoolQuotes(ideology) : [];
-  const previousQuoteRef = await readPreviousQuoteRef(userId, ideology, localDate);
+  const usedQuoteRefs = await readUsedQuoteRefs(userId, ideology, localDate);
   let chosenQuote = rotationQuote;
   let chosenState = rotationState;
 
@@ -150,13 +149,13 @@ export async function resolveUserBearing(userId: string, ideology: string, local
   }
 
   if (chosenQuote && quotes.length) {
-    const safeRef = avoidConsecutiveQuoteRef(
+    const safeRef = selectUnusedQuoteRef(
       chosenQuote.ref,
       rotationQuote?.ref ?? quotes[0]!.ref,
       quotes.map((quote) => ({ ref: quote.ref, sim: 0 })),
-      previousQuoteRef,
+      usedQuoteRefs,
     );
-    chosenQuote = quotes.find((quote) => quote.ref === safeRef) ?? chosenQuote;
+    chosenQuote = safeRef ? quotes.find((quote) => quote.ref === safeRef) ?? null : null;
   }
 
   const personalized =
