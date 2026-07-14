@@ -1,4 +1,4 @@
-import type { PoolClient } from 'pg';
+import type { Pool, PoolClient } from 'pg';
 import { corpus } from '@/data/corpus';
 import { chunkText } from '@/server/chunk';
 import { embedDocuments, toVectorLiteral } from '@/server/ai/voyage';
@@ -141,5 +141,20 @@ export async function refreshNextDueSource(client: PoolClient, now = new Date())
     const message = error instanceof Error ? error.message.slice(0, 500) : String(error).slice(0, 500);
     await client.query(`update corpus_source_refreshes set last_error = $2 where source_id = $1`, [source.id, message]);
     return { sourceId: source.id, refreshed: false, due: true, chunks: 0, error: message };
+  }
+}
+
+/** Serialize refresh work across the daily Bearing job and the protected manual endpoint. */
+export async function refreshNextDueSourceLocked(pool: Pool, now = new Date()): Promise<SourceRefreshResult> {
+  const client = await pool.connect();
+  let locked = false;
+  try {
+    const lock = (await client.query(`select pg_try_advisory_lock(8920147) as locked`)).rows[0] as { locked?: boolean } | undefined;
+    locked = !!lock?.locked;
+    if (!locked) return { sourceId: null, refreshed: false, due: false, chunks: 0 };
+    return await refreshNextDueSource(client, now);
+  } finally {
+    if (locked) await client.query(`select pg_advisory_unlock(8920147)`).catch(() => undefined);
+    client.release();
   }
 }

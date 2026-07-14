@@ -1,6 +1,7 @@
 import { adminPool } from '@/server/db';
 import { localDateFor } from '@/server/streak';
 import { getOrCreateBearing } from '@/server/bearing/store';
+import { refreshNextDueSourceLocked } from '@/server/sourceRefresh';
 
 // GET /api/bearing/tick — pre-warm today's bearing for every (school, timezone) a user
 // follows, so first-open is instant. On-demand generation already guarantees correctness;
@@ -29,5 +30,14 @@ export async function GET(req: Request) {
       console.error('bearing tick error', combo.ideology, e instanceof Error ? e.message : e);
     }
   }
-  return Response.json({ combos: combos.length, warmed });
+  // Keep the corpus schedule on this existing daily cron. That preserves the two-job limit on
+  // Vercel's Hobby plan while refreshing exactly one school-balanced source each day.
+  let sourceRefresh: Awaited<ReturnType<typeof refreshNextDueSourceLocked>> | null = null;
+  try {
+    sourceRefresh = await refreshNextDueSourceLocked(adminPool());
+  } catch (error) {
+    console.error('bearing source refresh error', error instanceof Error ? error.message : error);
+  }
+
+  return Response.json({ combos: combos.length, warmed, sourceRefresh });
 }
