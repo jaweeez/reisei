@@ -20,7 +20,7 @@ export async function POST(req: Request) {
   const crewId = typeof b.crewId === 'string' && b.crewId ? b.crewId : null;
 
   const code = await mintOrgInvite(org.id, userId, crewId);
-  if (!code) return Response.json({ error: 'That Corner is not part of your organization.' }, { status: 400 });
+  if (!code) return Response.json({ error: 'That Crew is not part of your organization.' }, { status: 400 });
   return Response.json({ code });
 }
 

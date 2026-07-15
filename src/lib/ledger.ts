@@ -17,6 +17,26 @@ export interface Ledger {
   stats: LedgerStats;
   retiredLines: { statement: string; start: string; retired: string | null }[];
   fieldReports: { date: string; verdict: Verdict; note: string }[];
+  cycleReports: {
+    id: string;
+    statement: string;
+    start: string;
+    end: string;
+    outcome: string;
+    held: number;
+    broke: number;
+    quiet: number;
+    holdRate: number | null;
+    recoveryRate: number | null;
+    averageRecoveryDays: number | null;
+    review: {
+      action: string;
+      easier: string | null;
+      friction: string | null;
+      nextStandard: string | null;
+      earlyReason: string | null;
+    } | null;
+  }[];
 }
 
 /** Fetch the Pro Ledger. `upsell` true (with no ledger) means the user is on Free. */

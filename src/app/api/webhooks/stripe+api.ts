@@ -59,7 +59,7 @@ export async function POST(req: Request) {
           if (subscriptionId) {
             try {
               const live = await stripe().subscriptions.retrieve(subscriptionId);
-              seats = live.items?.data?.[0]?.quantity ?? null;
+              seats = md.plan === 'seat' ? 8 : (live.items?.data?.[0]?.quantity ?? null);
               status = statusFromStripe(live.status);
               period = periodEnd(live);
             } catch (e) {
@@ -106,7 +106,7 @@ export async function POST(req: Request) {
         const md = sub.metadata ?? {};
         const userId = md.userId;
         if (md.plan === 'seat' || md.plan === 'org') {
-          const qty = sub.items?.data?.[0]?.quantity ?? null;
+          const qty = md.plan === 'seat' ? 8 : (sub.items?.data?.[0]?.quantity ?? null);
           const updated = await p.query(
             `update subscriptions set status = $2, seats = coalesce($3, seats), current_period_end = $4 where stripe_subscription_id = $1`,
             [sub.id, statusFromStripe(sub.status), qty, periodEnd(sub)],

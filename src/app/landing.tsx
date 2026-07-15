@@ -10,7 +10,7 @@ import { color, space } from '@/theme';
 
 const FEATURES: { label: string; body: string }[] = [
   { label: 'The Line', body: `A daily check-in. An honest read on where you're actually at, not where you think you should be.` },
-  { label: 'Your Corner', body: `A few people who actually know how you're doing. No performing.` },
+  { label: 'Your Crew', body: `A few people who actually know how you're doing. No performing.` },
   { label: 'The Bearing', body: 'A daily principle to steer by, from a tradition you pick. Perspective when your head gets loud.' },
   { label: 'The Log', body: 'Put words to it. Private. It tunes what the Bearing brings you.' },
   { label: 'Reset', body: 'Sixty seconds to get out of your head and back in your body when something spikes.' },

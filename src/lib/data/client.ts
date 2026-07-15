@@ -1,17 +1,20 @@
 import { api } from '@/lib/api';
 import type {
   AckKind,
+  EarlyChangeReason,
   BearingHistory,
   BearingResponse,
   HomeState,
   JournalFeed,
   JournalLogged,
   LineKind,
+  LineReviewAction,
   LineView,
   OrgJoined,
   OrgView,
   RecoveryFriction,
   RecoveryPlan,
+  ReachOutPreference,
   SchoolView,
   StreakView,
   Verdict,
@@ -50,11 +53,42 @@ export async function planRecovery(
   return res.data;
 }
 
-export async function createLine(statement: string, kind: LineKind = 'abstain'): Promise<{ line?: LineView; error?: string }> {
+export async function createLine(
+  statement: string,
+  kind: LineKind = 'abstain',
+  honestyAccepted = false,
+): Promise<{ line?: LineView; error?: string }> {
   const res = await api<{ line?: LineView; error?: string }>('/api/lines', {
     method: 'POST',
-    body: JSON.stringify({ statement, kind }),
+    body: JSON.stringify({ statement, kind, honestyAccepted }),
   });
+  return res.data;
+}
+
+export async function reviewLine(input: {
+  action: LineReviewAction;
+  statement?: string;
+  kind?: LineKind;
+  easier?: string;
+  friction?: string;
+  nextStandard?: string;
+  earlyReason?: EarlyChangeReason;
+}): Promise<{ ok?: boolean; error?: string }> {
+  const res = await api<{ ok?: boolean; error?: string }>('/api/lines/review', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+  return res.data;
+}
+
+export async function updateAccountability(input: {
+  honestyAccepted?: boolean;
+  reachOutPreference?: ReachOutPreference;
+}): Promise<{ honestyAcknowledged?: boolean; reachOutPreference?: ReachOutPreference; error?: string }> {
+  const res = await api<{ honestyAcknowledged?: boolean; reachOutPreference?: ReachOutPreference; error?: string }>(
+    '/api/accountability',
+    { method: 'POST', body: JSON.stringify(input) },
+  );
   return res.data;
 }
 
@@ -64,20 +98,21 @@ export async function retireLine(id: string): Promise<boolean> {
 }
 
 // --- Crew ---
-export async function createCrew(name: string): Promise<{ id?: string; error?: string; upsell?: boolean }> {
+export async function createCrew(name: string, honestyAccepted = false): Promise<{ id?: string; error?: string; upsell?: boolean }> {
   const res = await api<{ id?: string; error?: string; upsell?: boolean }>('/api/crew', {
     method: 'POST',
-    body: JSON.stringify({ name }),
+    body: JSON.stringify({ name, honestyAccepted }),
   });
   return res.data;
 }
 
 export async function joinCrew(
   code: string,
+  honestyAccepted = false,
 ): Promise<{ crewId?: string; error?: string; upsell?: boolean; status: number }> {
   const res = await api<{ crewId?: string; error?: string; upsell?: boolean }>('/api/crew/join', {
     method: 'POST',
-    body: JSON.stringify({ code }),
+    body: JSON.stringify({ code, honestyAccepted }),
   });
   // Carry the HTTP status so the UI can tell "bad code" (404, maybe an org code)
   // from "needs premium" (402) from "Corner is full" (409).
@@ -172,8 +207,8 @@ export async function setCrewSeat(crewId: string, userId: string, action: 'assig
 }
 
 /** The caller's Corner-plan seat pool (captain view), or null without an active 'seat' sub. */
-export async function fetchCrewSeatPool(): Promise<{ total: number; used: number; seatedUserIds: string[] } | null> {
-  const res = await api<{ pool: { total: number; used: number; seatedUserIds: string[] } | null }>('/api/crew/seats');
+export async function fetchCrewSeatPool(): Promise<{ kind: 'pro' | 'crew'; total: number; used: number; seatedUserIds: string[] } | null> {
+  const res = await api<{ pool: { kind: 'pro' | 'crew'; total: number; used: number; seatedUserIds: string[] } | null }>('/api/crew/seats');
   return res.ok ? res.data.pool : null;
 }
 

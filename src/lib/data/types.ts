@@ -19,7 +19,7 @@ export interface Me {
 
 export type Tier = 'free' | 'pro' | 'team' | 'org';
 
-/** Hard cap on Corner membership. Keep in sync with the check in crew_join
+/** Hard cap on Crew membership. Keep in sync with the check in crew_join
  *  (db/migrations/0019_orgs.sql). */
 export const CORNER_MAX = 8;
 
@@ -32,6 +32,10 @@ export interface Entitlement {
   isAdmin: boolean;
   /** Owns an org row (any subscription status) — keeps the org dashboard reachable after a lapse. */
   ownsOrg?: boolean;
+  /** Direct Pro covers the subscriber plus two invited people. */
+  coverage?: { used: number; total: number };
+  /** This account receives Pro through another person's direct Pro plan. */
+  coveredByPro?: boolean;
 }
 
 // --- Admin dashboard ---
@@ -57,6 +61,26 @@ export interface AdminUser {
 
 export type Verdict = 'held' | 'broke';
 export type LineKind = 'abstain' | 'hold';
+export type LineReviewAction = 'keep' | 'refine' | 'raise' | 'replace' | 'retire';
+export type EarlyChangeReason = 'unclear' | 'unrealistic' | 'circumstances' | 'unsafe' | 'other';
+
+export const EARLY_CHANGE_REASON_LABEL: Record<EarlyChangeReason, string> = {
+  unclear: 'The Line was unclear',
+  unrealistic: 'The Line was unrealistic',
+  circumstances: 'Circumstances changed',
+  unsafe: 'The Line is no longer safe or appropriate',
+  other: 'Another reason',
+};
+
+export type ReachOutPreference = 'reisei_nudge' | 'text' | 'call' | 'next_meeting' | 'one_day';
+
+export const REACH_OUT_LABEL: Record<ReachOutPreference, string> = {
+  reisei_nudge: 'Send a Reisei nudge',
+  text: 'Text me',
+  call: 'Call me',
+  next_meeting: 'Ask me at the next meeting',
+  one_day: 'Give me one day, then reach out',
+};
 
 /** The common places a line gets loose. Kept finite so the next move can be useful. */
 export const RECOVERY_FRICTIONS = ['time', 'energy', 'conflict', 'avoidance'] as const;
@@ -73,7 +97,7 @@ export const RECOVERY_MOVES = [
   'Set the cue earlier',
   'Make the first step smaller',
   'Clear one obstacle tonight',
-  'Tell your Corner',
+  'Tell your Crew',
 ] as const;
 
 /** A private adjustment made after an honest break, carried into the next day. */
@@ -89,6 +113,20 @@ export interface LineView {
   statement: string;
   kind: LineKind;
   startLocalDate: string;
+}
+
+export interface LineCycleView {
+  id: string;
+  startLocalDate: string;
+  reviewLocalDate: string;
+  /** 1 through 14 while active. */
+  day: number;
+  reviewDue: boolean;
+}
+
+export interface AccountabilityView {
+  honestyAcknowledged: boolean;
+  reachOutPreference: ReachOutPreference | null;
 }
 
 export interface StreakView {
@@ -117,6 +155,8 @@ export interface CrewMemberView {
   acksReceived: number;
   /** Whether the viewer has already acked this member today (any kind). */
   ackedByMe: boolean;
+  reachOutPreference: ReachOutPreference | null;
+  week: { held: number; broke: number; quiet: number; recovered: number };
 }
 
 export interface CrewView {
@@ -127,12 +167,15 @@ export interface CrewView {
   heldCount: number;
   brokeCount: number;
   members: CrewMemberView[];
+  week: { held: number; broke: number; quiet: number; recovered: number };
 }
 
 export interface HomeState {
   localDate: string;
   /** The user's active line, or null (→ Today shows the "draw your line" empty state). */
   line: LineView | null;
+  cycle: LineCycleView | null;
+  accountability: AccountabilityView;
   /** What was logged today for the active line, or null if not logged yet. */
   todayVerdict: Verdict | null;
   streak: StreakView;

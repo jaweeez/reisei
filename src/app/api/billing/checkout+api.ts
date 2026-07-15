@@ -17,7 +17,7 @@ import {
 // → Stripe Checkout URL. WEB rail only — mobile Pro is bought via RevenueCat/IAP, and
 // per-seat plans are always web (seats can't run on IAP).
 //   pro  — individual, quantity 1, 7-day trial.
-//   seat — a Corner's worth (2–8), captain-sponsored.
+//   seat — one flat Crew plan covering up to eight people.
 //   org  — 9+ seats, no ceiling; requires an org the caller owns (created first in-app so
 //          the session's metadata carries orgId for the webhook to bind).
 export async function POST(req: Request) {
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
   const interval = parseInterval(b.interval);
   const seats = clampSeats(plan, Number(b.seats));
 
-  // One live Corner-seat plan per sponsor (a second would double-bill into a split,
+  // One live Crew plan per sponsor (a second would double-bill into a split,
   // unmanageable pool — the pool queries pick one sub). Grow seats via the portal instead.
   if (plan === 'seat') {
     const live = (
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
       )
     ).rowCount;
     if (live) {
-      return Response.json({ error: 'You already cover a Corner. Manage seats in billing.' }, { status: 409 });
+      return Response.json({ error: 'You already cover a Crew. Manage it in billing.' }, { status: 409 });
     }
   }
 

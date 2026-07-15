@@ -8,16 +8,16 @@ export interface AuthPayload {
   error?: string;
 }
 
-async function persist(res: { ok: boolean; data: AuthPayload }): Promise<AuthPayload> {
-  if (res.ok && res.data.token) await setToken(res.data.token);
+async function persist(res: { ok: boolean; data: AuthPayload }, remember = true): Promise<AuthPayload> {
+  if (res.ok && res.data.token) await setToken(res.data.token, remember);
   return res.data;
 }
 
 export const authApi = {
   register: (username: string, pin: string, name: string, email: string) =>
     api<AuthPayload>('/api/auth/register', { method: 'POST', body: JSON.stringify({ username, pin, name, email }) }).then(persist),
-  login: (username: string, pin: string) =>
-    api<AuthPayload>('/api/auth/login', { method: 'POST', body: JSON.stringify({ username, pin }) }).then(persist),
+  login: (username: string, pin: string, remember = true) =>
+    api<AuthPayload>('/api/auth/login', { method: 'POST', body: JSON.stringify({ username, pin, remember }) }).then((res) => persist(res, remember)),
   me: () => api<{ user: Me; entitlement: Entitlement }>('/api/auth/me'),
   logout: async () => {
     await api('/api/auth/logout', { method: 'POST' });

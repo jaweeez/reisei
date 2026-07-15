@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react';
-import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { color, radius, space } from '@/theme';
 import { Body, Mono } from './Text';
 

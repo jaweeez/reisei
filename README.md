@@ -38,9 +38,9 @@ npm run web                       # or: npm run ios / npm run android
 Hybrid from day one, premium, **free to join / pay to lead**:
 
 - **Free** — solo check-ins, streaks, join invited crews.
-- **Pro** ($6.99/mo · $49.99/yr) — create & captain a crew, history, streak insurance.
+- **Pro** ($12.99/mo · $99/yr) — one private Crew for the subscriber plus two invited people, Cycles, full history, and personalized Bearings.
   Sold on **both** rails (Stripe web + RevenueCat IAP).
-- **Crew / Team** (~$4.99/seat/mo) — leader pays; every seated member is comped Pro.
+- **Crew** ($24.99/mo · $199/yr) — flat plan for up to eight people; every covered member gets the complete member experience.
   **Stripe web only** (per-seat can't run on IAP).
 
 One `entitlement` tier (`free|pro|team`) is the source of truth; Stripe + RevenueCat

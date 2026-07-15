@@ -1,9 +1,30 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Body, Button, Caption, Card, Chip, CrewDots, Display, Eyebrow, Input, Mono, Nudge, Screen, Text, Title, VialMark } from '@/components';
-import { checkIn, createLine, fetchState, planRecovery } from '@/lib/data/client';
+import {
+  ActionDock,
+  Body,
+  Button,
+  Caption,
+  Chip,
+  CrewDots,
+  Display,
+  EmptyState,
+  Eyebrow,
+  HeroPanel,
+  InlineNotice,
+  Input,
+  IntegrityAgreement,
+  ListRow,
+  Mono,
+  PageHeader,
+  Screen,
+  Section,
+  StatusPill,
+  VialMark,
+} from '@/components';
+import { checkIn, createLine, fetchState, planRecovery, updateAccountability } from '@/lib/data/client';
 import { confirm } from '@/lib/alerts';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import {
@@ -14,7 +35,7 @@ import {
   type LineKind,
   type RecoveryFriction,
 } from '@/lib/data/types';
-import { color, space } from '@/theme';
+import { color, radius, space } from '@/theme';
 
 export default function Today() {
   const { user } = useAuth();
@@ -24,30 +45,35 @@ export default function Today() {
   const [friction, setFriction] = useState<RecoveryFriction | null>(null);
   const [move, setMove] = useState('');
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
-  // draw-a-line form
   const [statement, setStatement] = useState('');
   const [kind, setKind] = useState<LineKind>('abstain');
+  const [honestyAccepted, setHonestyAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => setState(await fetchState()), []);
-  useFocusEffect(
-    useCallback(() => {
-      void load();
-    }, [load]),
-  );
+  const load = useCallback(async () => {
+    const next = await fetchState();
+    setState(next);
+    if (next?.accountability.honestyAcknowledged) setHonestyAccepted(true);
+  }, []);
+  useFocusEffect(useCallback(() => void load(), [load]));
 
   async function onDraw() {
-    if (statement.trim().length < 2) return;
+    if (statement.trim().length < 2 || !honestyAccepted) return;
     setBusy(true);
     setError(null);
-    const res = await createLine(statement.trim(), kind);
+    const res = await createLine(statement.trim(), kind, honestyAccepted);
     setBusy(false);
     if (res.line) {
       setStatement('');
       await load();
-    } else {
-      setError(res.error ?? 'Could not draw the line.');
-    }
+    } else setError(res.error ?? 'Could not draw the Line.');
+  }
+
+  async function acceptExistingAgreement() {
+    setBusy(true);
+    const result = await updateAccountability({ honestyAccepted: true });
+    setBusy(false);
+    if (result.honestyAcknowledged) await load();
   }
 
   async function onLog(verdict: 'held' | 'broke') {
@@ -58,13 +84,12 @@ export default function Today() {
     setBusy(true);
     const res = await checkIn(verdict, note.trim() || undefined);
     setBusy(false);
-    if (res) {
-      void Haptics.notificationAsync(
-        verdict === 'held' ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Warning,
-      );
-      setNote('');
-      await load();
-    }
+    if (!res) return;
+    void Haptics.notificationAsync(
+      verdict === 'held' ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Warning,
+    );
+    setNote('');
+    await load();
   }
 
   async function onPlanRecovery() {
@@ -81,212 +106,176 @@ export default function Today() {
       setFriction(null);
       setMove('');
       await load();
-    } else {
-      setRecoveryError(res.error ?? 'Could not set tomorrow\'s move.');
-    }
+    } else setRecoveryError(res.error ?? 'Could not set tomorrow\'s move.');
   }
 
-  if (!state) {
-    return (
-      <Screen>
-        <Caption>Loading…</Caption>
-      </Screen>
-    );
-  }
+  if (!state) return <Screen><Caption>Loading…</Caption></Screen>;
 
-  // ── Empty state: draw your line ──
   if (!state.line) {
     return (
       <Screen>
-        <View style={styles.head}>
-          <VialMark width={150} />
-          <Title style={{ marginTop: space.lg }}>Draw your line</Title>
-        </View>
-        <Card>
-          <Body>One standard you hold yourself to. An honest slip beats going quiet, so log it. Your Corner respects the report.</Body>
+        <PageHeader title="Today" context={state.localDate} />
+        <EmptyState
+          title="Draw your Line"
+          body="Choose one standard for the next fourteen days. Make it clear enough that you know whether you held it."
+        />
+        <HeroPanel>
           <Input
             inCard
-            placeholder='e.g. "In bed by 23:00" · "No drinking"'
+            placeholder='e.g. "In bed by 23:00" or "No drinking"'
             value={statement}
             onChangeText={setStatement}
             maxLength={80}
           />
           <View style={styles.kindRow}>
-            <Chip label="A line I won't cross" active={kind === 'abstain'} onPress={() => setKind('abstain')} style={{ flex: 1 }} />
-            <Chip label="A bar I'll hold" active={kind === 'hold'} onPress={() => setKind('hold')} style={{ flex: 1 }} />
+            <Chip label="A Line I won't cross" active={kind === 'abstain'} onPress={() => setKind('abstain')} style={styles.grow} />
+            <Chip label="A bar I'll hold" active={kind === 'hold'} onPress={() => setKind('hold')} style={styles.grow} />
           </View>
-          {error && <Body color={color.actionText}>{error}</Body>}
-          <Button label="Draw the line" onPress={onDraw} loading={busy} disabled={statement.trim().length < 2} />
-        </Card>
+          {!state.accountability.honestyAcknowledged ? (
+            <IntegrityAgreement accepted={honestyAccepted} onChange={setHonestyAccepted} />
+          ) : null}
+          {error ? <Body color={color.actionText}>{error}</Body> : null}
+          <Button label="Start the 14-day Cycle" onPress={onDraw} loading={busy} disabled={statement.trim().length < 2 || !honestyAccepted} />
+        </HeroPanel>
       </Screen>
     );
   }
 
-  const line = state.line;
+  const { line, cycle } = state;
   const s = state.streak;
-  const verdict = state.todayVerdict ?? null;
-  const message =
-    verdict === 'held'
-      ? 'Logged. You showed up today.'
-      : verdict === 'broke'
-        ? 'You logged it honestly. That counts.'
-        : s && s.current > 0
-          ? `${s.current}-day streak. One day at a time.`
-          : s && s.lastVerdict === 'broke'
-            ? 'It slipped last time. Today is a fresh read. Check in.'
-            : 'Check in when you are ready.';
+  const verdict = state.todayVerdict;
+  const message = verdict === 'held'
+    ? 'Logged. You showed up today.'
+    : verdict === 'broke'
+      ? 'You logged it honestly. That counts.'
+      : s.current > 0
+        ? `${s.current}-day streak. One day at a time.`
+        : s.lastVerdict === 'broke'
+          ? 'It slipped last time. Today is a fresh read.'
+          : 'Give today an honest read.';
 
   return (
     <Screen>
-      {state.todayNudge && <Nudge label="Coach" body={state.todayNudge} />}
-      {state.recovery.carry && (
-        <Nudge
-          label="Your move today"
-          body={`${RECOVERY_FRICTION_LABEL[state.recovery.carry.friction]}. ${state.recovery.carry.move}.`}
+      <PageHeader
+        title="Today"
+        context={cycle ? `Day ${cycle.day} of 14 · ${state.localDate}` : state.localDate}
+        action={{ label: 'Ledger', onPress: () => router.push('/ledger') }}
+      />
+
+      {!state.accountability.honestyAcknowledged ? (
+        <InlineNotice
+          label="Integrity"
+          body="Reisei only works when the report is honest. Tap to accept the honesty agreement."
+          onPress={acceptExistingAgreement}
         />
-      )}
+      ) : null}
+      {cycle?.reviewDue ? (
+        <InlineNotice label="Line Review due" body="Fourteen days are complete. Read the Cycle honestly and decide what comes next." onPress={() => router.push('/line-review')} />
+      ) : null}
+      {state.todayNudge ? <InlineNotice label="Coach" body={state.todayNudge} /> : null}
+      {state.recovery.carry ? (
+        <InlineNotice label="Your move today" body={`${RECOVERY_FRICTION_LABEL[state.recovery.carry.friction]}. ${state.recovery.carry.move}.`} />
+      ) : null}
 
-      {state.bearing ? (
-        <Card style={styles.bearingCard}>
-          <Eyebrow>{`Today's bearing · ${state.bearing.label}`}</Eyebrow>
-          {state.bearing.principle ? (
-            <>
-              {state.bearing.quote && (
-                <View style={styles.quoteBlock}>
-                  <Text variant="quote">{`“${state.bearing.quote.text}”`}</Text>
-                  <Mono color={color.textSecondary}>{state.bearing.quote.ref}</Mono>
-                </View>
-              )}
-              <Body color={color.textPrimary}>{state.bearing.principle}</Body>
-              {state.bearing.prompt && <Body>{`Try: ${state.bearing.prompt}`}</Body>}
-              <Button
-                label={state.bearing.loggedToday ? 'Open your bearing' : 'Take the bearing'}
-                variant="secondary"
-                onPress={() => router.push('/bearing')}
-              />
-            </>
-          ) : (
-            <>
-              <Body>Draw today’s principle before the day gets loud.</Body>
-              <Button label="Draw today’s bearing" onPress={() => router.push('/bearing')} />
-            </>
-          )}
-        </Card>
-      ) : (
-        <Nudge label="The Bearing" body="Choose a school and draw a principle to steer by today." onPress={() => router.push('/bearing')} />
-      )}
-
-      <Card>
-        <Eyebrow>Your line</Eyebrow>
-        <Display>{line?.statement ?? ''}</Display>
-        {s && (
-          <Mono>
-            {`STREAK ${String(s.current).padStart(2, '0')} · BEST ${String(s.longest).padStart(2, '0')} · BROKE ${String(
-              s.breaks,
-            ).padStart(2, '0')} · INTEGRITY ${String(s.integrity).padStart(2, '0')}`}
-          </Mono>
-        )}
-
-        <View style={styles.mark}>
-          <VialMark width={200} off={verdict === 'broke' ? 42 : 0} />
+      <HeroPanel>
+        <View style={styles.heroHead}>
+          <Eyebrow>Your Line</Eyebrow>
+          <StatusPill
+            label={verdict === 'held' ? 'Held' : verdict === 'broke' ? 'Honest break' : cycle?.reviewDue ? 'Review due' : 'Open'}
+            tone={verdict === 'held' ? 'held' : verdict === 'broke' ? 'broke' : cycle?.reviewDue ? 'review' : 'quiet'}
+          />
         </View>
-
+        <Display>{line.statement}</Display>
+        <Mono>{`STREAK ${String(s.current).padStart(2, '0')} · BEST ${String(s.longest).padStart(2, '0')} · INTEGRITY ${String(s.integrity).padStart(2, '0')}`}</Mono>
+        <View style={styles.mark}><VialMark width={184} off={verdict === 'broke' ? 42 : 0} /></View>
         <Body>{message}</Body>
 
         {verdict === null ? (
           <>
-            <Input
-              inCard
-              placeholder="How did today actually go?"
-              value={note}
-              onChangeText={setNote}
-              maxLength={140}
-            />
-            <Button label="Held it" onPress={() => onLog('held')} loading={busy} />
-            <Button label="It slipped" variant="ghost" onPress={() => onLog('broke')} />
+            <Input inCard placeholder="How did today actually go?" value={note} onChangeText={setNote} maxLength={140} />
+            <ActionDock reminder="Tell the truth. That is the work.">
+              <Button label="Held it" onPress={() => onLog('held')} loading={busy} />
+              <Button label="It slipped" variant="ghost" onPress={() => onLog('broke')} disabled={busy} />
+            </ActionDock>
           </>
         ) : (
           <Mono>{`LOGGED TODAY · ${verdict.toUpperCase()}`}</Mono>
         )}
-      </Card>
+        <Button label={cycle?.reviewDue ? 'Complete Line Review' : 'Review or change Line'} variant="ghost" onPress={() => router.push('/line-review')} />
+      </HeroPanel>
 
-      {verdict === 'broke' && (
-        state.recovery.today ? (
-          <Card>
-            <Eyebrow>Tomorrow's move</Eyebrow>
-            <Body color={color.textPrimary}>{state.recovery.today.move}</Body>
-            <Caption>{`${RECOVERY_FRICTION_LABEL[state.recovery.today.friction]}. Set for tomorrow.`}</Caption>
-          </Card>
-        ) : (
-          <Card>
-            <Eyebrow>Turn the miss</Eyebrow>
-            <Body>What got in the way?</Body>
-            <View style={styles.chipGrid}>
-              {RECOVERY_FRICTIONS.map((value) => (
-                <Chip
-                  key={value}
-                  label={RECOVERY_FRICTION_LABEL[value]}
-                  active={friction === value}
-                  onPress={() => setFriction(value)}
-                  style={styles.chipHalf}
-                />
-              ))}
+      {verdict === 'broke' ? (
+        <Section label="Recovery">
+          {state.recovery.today ? (
+            <InlineNotice label="Tomorrow's move" body={`${state.recovery.today.move}. ${RECOVERY_FRICTION_LABEL[state.recovery.today.friction]}.`} />
+          ) : (
+            <View style={styles.stack}>
+              <Body>What got in the way?</Body>
+              <View style={styles.chipGrid}>
+                {RECOVERY_FRICTIONS.map((value) => (
+                  <Chip key={value} label={RECOVERY_FRICTION_LABEL[value]} active={friction === value} onPress={() => setFriction(value)} style={styles.chipHalf} />
+                ))}
+              </View>
+              <Body>What is your move tomorrow?</Body>
+              <View style={styles.chipGrid}>
+                {RECOVERY_MOVES.map((option) => (
+                  <Chip key={option} label={option} active={move === option} onPress={() => setMove(option)} style={styles.chipHalf} />
+                ))}
+              </View>
+              {recoveryError ? <Body color={color.actionText}>{recoveryError}</Body> : null}
+              <Button label="Set tomorrow's move" onPress={onPlanRecovery} loading={busy} disabled={!friction || !move} />
             </View>
-            <Body>What is your move tomorrow?</Body>
-            <View style={styles.chipGrid}>
-              {RECOVERY_MOVES.map((option) => (
-                <Chip key={option} label={option} active={move === option} onPress={() => setMove(option)} style={styles.chipHalf} />
-              ))}
-            </View>
-            {recoveryError && <Body color={color.actionText}>{recoveryError}</Body>}
-            <Button label="Set tomorrow's move" onPress={onPlanRecovery} loading={busy} disabled={!friction || !move} />
-          </Card>
-        )
-      )}
+          )}
+        </Section>
+      ) : null}
 
-      {verdict === 'broke' && (
-        <Nudge label="The log" body="Rough one today. Put words to it. Private, just for you." onPress={() => router.push('/log')} />
-      )}
+      <Section label="Tools">
+        <View style={styles.tools}>
+          <Tool label="Bearing" detail={state.bearing?.label ?? 'Choose a school'} onPress={() => router.push('/bearing')} />
+          <Tool label="Reset" detail={state.resetToday ? 'Done today' : '60s to level'} onPress={() => router.push('/reset')} />
+          <Tool label="Log" detail="Private" onPress={() => router.push('/log')} />
+        </View>
+      </Section>
 
-      {user && !user.emailRequired && !user.emailVerified && (
-        <Nudge label="Account" body="Add an email so you can recover your account." onPress={() => router.push('/verify-email')} />
-      )}
+      <Section label="Crew" action={{ label: 'Open', onPress: () => router.push('/crew') }}>
+        {state.crews.length ? state.crews.map((crew) => (
+          <ListRow
+            key={crew.id}
+            title={crew.name}
+            detail={`${crew.heldCount} held · ${crew.brokeCount} honest breaks · ${crew.memberCount} people`}
+            trailing={<CrewDots members={crew.members} />}
+            onPress={() => router.push('/crew')}
+          />
+        )) : (
+          <Caption>No Crew yet. Pro covers you and two invited people.</Caption>
+        )}
+      </Section>
 
-      <Button
-        label={state.resetToday ? 'Reset · run it again' : 'Reset · 60s to level'}
-        variant="secondary"
-        onPress={() => router.push('/reset')}
-      />
-
-      {state.crews.length > 0 ? (
-        state.crews.map((crew) => (
-          <Card key={crew.id}>
-            <View style={styles.crewHead}>
-              <Body color={color.textPrimary} numberOfLines={1} style={{ flex: 1, marginRight: space.sm }}>
-                {crew.name}
-              </Body>
-              <Mono>{`HELD ${crew.heldCount}/${crew.memberCount}${crew.brokeCount ? ` · ${crew.brokeCount} BROKE` : ''}`}</Mono>
-            </View>
-            <CrewDots members={crew.members} />
-          </Card>
-        ))
-      ) : (
-        <Card>
-          <Eyebrow>Your Corner</Eyebrow>
-          <Caption>No Corner yet. Join one, or go Pro to lead your own. You hold your line in front of people who know what you committed to.</Caption>
-        </Card>
-      )}
+      {user && !user.emailRequired && !user.emailVerified ? (
+        <InlineNotice label="Account" body="Add an email so you can recover your account." onPress={() => router.push('/verify-email')} />
+      ) : null}
     </Screen>
   );
 }
 
+function Tool({ label, detail, onPress }: { label: string; detail: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.tool, pressed && styles.pressed]} accessibilityRole="button">
+      <Eyebrow>{label}</Eyebrow>
+      <Caption>{detail}</Caption>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
-  head: { alignItems: 'center', marginTop: space.section },
-  mark: { alignItems: 'center', paddingVertical: space.md },
-  crewHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  grow: { flex: 1 },
   kindRow: { flexDirection: 'row', gap: space.sm },
+  heroHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: space.md },
+  mark: { alignItems: 'center', paddingVertical: space.sm },
+  stack: { gap: space.md },
   chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   chipHalf: { flexGrow: 1, flexBasis: '46%' },
-  bearingCard: { borderColor: color.ruleStrong },
-  quoteBlock: { gap: space.xs, paddingLeft: space.md, borderLeftWidth: 2, borderLeftColor: color.action },
+  tools: { flexDirection: 'row', gap: space.sm },
+  tool: { flex: 1, minHeight: 88, borderWidth: 1, borderColor: color.rule, borderRadius: radius.md, padding: space.md, justifyContent: 'space-between' },
+  pressed: { opacity: 0.78 },
 });

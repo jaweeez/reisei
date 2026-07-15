@@ -5,9 +5,9 @@ import Stripe from 'stripe';
 // return 501 when it isn't configured (the app runs on entitlements alone).
 //
 // THREE Stripe products (web rail only — mobile Pro is sold via RevenueCat/IAP):
-//   PRO  — individual "Reisei Pro"        (quantity 1, $6.99/mo)
-//   SEAT — captain-paid Corner seat       (quantity 2–8, $4.99/seat: one Corner's worth)
-//   ORG  — organization seat              (quantity 9+, $3.99/seat, no ceiling: many Corners)
+//   PRO  — subscriber plus two covered people ($12.99/mo or $99/yr)
+//   SEAT — flat Crew plan for up to eight people ($24.99/mo or $199/yr)
+//   ORG  — organization seat (9+, many Crews)
 //
 // Required env when billing is on:
 //   STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, EXPO_PUBLIC_APP_URL, and the price ids.
@@ -45,12 +45,12 @@ export const proIntervals = (): Interval[] => (['monthly', 'annual'] as const).f
 export const seatIntervals = (): Interval[] => (['monthly', 'annual'] as const).filter((i) => Boolean(priceRef('seat', i)));
 export const orgIntervals = (): Interval[] => (['monthly', 'annual'] as const).filter((i) => Boolean(priceRef('org', i)));
 
-// Seat quantity rules, in one place. A Corner is 2–8 paid seats (one Corner's worth);
-// an Organization starts where a Corner ends (9+) and has no product ceiling (999 is
+// Quantity rules, in one place. Pro and Crew are flat products. The webhook grants
+// the Crew product an eight-person pool. An Organization starts at 9 and has no product ceiling (999 is
 // Stripe's adjustable-quantity bound, not a promise we make in copy).
 export const SEAT_RULES: Record<PlanKey, { min: number; max: number }> = {
   pro: { min: 1, max: 1 },
-  seat: { min: 2, max: 8 },
+  seat: { min: 1, max: 1 },
   org: { min: 9, max: 999 },
 };
 

@@ -5,20 +5,21 @@ import { pool } from '../db';
 // token is a 64-hex random string used as a Bearer credential (native) or an
 // httpOnly cookie value (web). `sessions` is auth-infrastructure (not under RLS).
 
-const SESSION_TTL_DAYS = 30;
+const STANDARD_SESSION_TTL_SECONDS = 86_400;
+export const REMEMBERED_SESSION_TTL_SECONDS = 90 * 86_400;
 export const SESSION_COOKIE = 'reisei_session';
-export const SESSION_TTL_SECONDS = SESSION_TTL_DAYS * 86_400;
 
 export function generateToken(): string {
   return randomBytes(32).toString('hex');
 }
 
-export async function createSession(userId: string, userAgent?: string | null): Promise<string> {
+export async function createSession(userId: string, userAgent?: string | null, remember = true): Promise<string> {
   const token = generateToken();
+  const ttlSeconds = remember ? REMEMBERED_SESSION_TTL_SECONDS : STANDARD_SESSION_TTL_SECONDS;
   await pool().query(
     `insert into sessions (token, user_id, expires_at, user_agent)
      values ($1, $2, now() + ($3 || ' seconds')::interval, $4)`,
-    [token, userId, String(SESSION_TTL_SECONDS), userAgent ?? null],
+    [token, userId, String(ttlSeconds), userAgent ?? null],
   );
   return token;
 }
@@ -50,9 +51,10 @@ export async function revokeAllSessions(userId: string): Promise<void> {
 }
 
 /** The Set-Cookie value for a new session (web; native uses the Bearer token). */
-export function sessionCookie(token: string): string {
+export function sessionCookie(token: string, remember = true): string {
   const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-  return `${SESSION_COOKIE}=${token}; HttpOnly${secure}; SameSite=Lax; Path=/; Max-Age=${SESSION_TTL_SECONDS}`;
+  const maxAge = remember ? `; Max-Age=${REMEMBERED_SESSION_TTL_SECONDS}` : '';
+  return `${SESSION_COOKIE}=${token}; HttpOnly${secure}; SameSite=Lax; Path=/${maxAge}`;
 }
 
 /** The Set-Cookie value that clears the session cookie (logout). */

@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { router, useFocusEffect } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Body, Button, Caption, Card, CrisisCard, Eyebrow, Input, Mono, Screen, Title } from '@/components';
+import { Body, Button, Caption, CrisisCard, HeroPanel, Input, Mono, PageHeader, Screen, Section } from '@/components';
 import { fetchJournal, logJournal } from '@/lib/data/client';
 import type { JournalFeed } from '@/lib/data/types';
 import { color, space } from '@/theme';
@@ -46,10 +46,10 @@ export default function Log() {
 
   return (
     <Screen>
-      <Title>The log</Title>
-      <Caption>Put words to it. Private. No one sees this but you.</Caption>
+      <PageHeader title="The Log" context="Private" />
 
-      <Card>
+      <HeroPanel>
+        <Caption>Put words to it. No one sees this but you.</Caption>
         <Input
           inCard
           multiline
@@ -63,30 +63,32 @@ export default function Log() {
         />
         {error && <Body color={color.actionText}>{error}</Body>}
         <Button label="Log it" onPress={onLog} loading={busy} disabled={!body.trim()} />
-      </Card>
+      </HeroPanel>
 
       {offramp && <CrisisCard alert />}
 
+      <Section label="Past entries">
       <View style={styles.list}>
         {feed?.entries.length ? (
           feed.entries.map((e) => (
-            <Card key={e.id}>
+            <View key={e.id} style={styles.entry}>
               <Mono>{e.date}</Mono>
               <Body color={color.textPrimary}>{e.body}</Body>
-            </Card>
+            </View>
           ))
         ) : (
           <Caption>Nothing logged yet. Write one honest line above. It stays here, with you.</Caption>
         )}
 
         {feed?.upsell && (
-          <Card>
-            <Eyebrow>Pro</Eyebrow>
+          <View style={styles.entry}>
+            <Mono>PRO ARCHIVE</Mono>
             <Caption>You have entries older than 30 days. Go Pro to keep the full log.</Caption>
             <Button label="Go Pro" onPress={() => router.push('/paywall')} />
-          </Card>
+          </View>
         )}
       </View>
+      </Section>
 
       {!offramp && <CrisisCard />}
     </Screen>
@@ -94,5 +96,6 @@ export default function Log() {
 }
 
 const styles = StyleSheet.create({
-  list: { gap: space.lg },
+  list: { gap: 0 },
+  entry: { gap: space.sm, paddingVertical: space.lg, borderTopWidth: 1, borderTopColor: color.rule },
 });

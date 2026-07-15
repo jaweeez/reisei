@@ -57,20 +57,37 @@ export default function LedgerScreen() {
         <ScreenHeader title="The Ledger" />
         <Card>
           <Eyebrow>Pro</Eyebrow>
-          <Body>The Ledger is the shape of your composure: your hold calendar, your hold-rate, where the hard days land, and every line you've retired. It's a Pro feature.</Body>
+          <Body>{'The Ledger is the shape of your composure: your hold calendar, your hold-rate, where the hard days land, and every Line you\'ve retired. It\'s a Pro feature.'}</Body>
           <Button label="Go Pro" onPress={() => router.push('/paywall')} />
         </Card>
       </Screen>
     );
   }
 
-  const { stats, calendar, retiredLines, fieldReports } = ledger;
+  const { stats, calendar, retiredLines, fieldReports, cycleReports } = ledger;
   const verdictByDate = new Map(calendar.map((d) => [d.date, d.verdict]));
   const weeks = calendarWeeks();
 
   return (
     <Screen>
       <ScreenHeader title="The Ledger" />
+
+      {cycleReports.length > 0 && (
+        <Card>
+          <Eyebrow>Cycle Reports</Eyebrow>
+          {cycleReports.map((cycle) => (
+            <View key={cycle.id} style={styles.report}>
+              <Heading>{cycle.statement}</Heading>
+              <Mono>{`${cycle.start} → ${cycle.end} · ${cycle.outcome.toUpperCase()}`}</Mono>
+              <Mono>{`HELD ${cycle.held} · BROKE ${cycle.broke} · QUIET ${cycle.quiet} · HOLD-RATE ${cycle.holdRate ?? '-'}%`}</Mono>
+              {cycle.recoveryRate !== null ? <Caption>{`${cycle.recoveryRate}% of honest breaks recovered within two days.`}</Caption> : null}
+              {cycle.review?.easier ? <Body>{`Worked: ${cycle.review.easier}`}</Body> : null}
+              {cycle.review?.friction ? <Body>{`Friction: ${cycle.review.friction}`}</Body> : null}
+              {cycle.review?.nextStandard ? <Body>{`Next: ${cycle.review.nextStandard}`}</Body> : null}
+            </View>
+          ))}
+        </Card>
+      )}
 
       <Card>
         <Eyebrow>Line stats</Eyebrow>

@@ -12,6 +12,10 @@ describe('deriveTier', () => {
     expect(deriveTier({ owns_org: false, has_seat: true, user_plan: 'pro' })).toBe('team');
   });
 
+  it('direct Pro coverage grants the team tier', () => {
+    expect(deriveTier({ owns_org: false, has_seat: false, has_coverage: true, user_plan: 'free' })).toBe('team');
+  });
+
   it('falls through to the personal plan', () => {
     expect(deriveTier({ owns_org: false, has_seat: false, user_plan: 'pro' })).toBe('pro');
     expect(deriveTier({ owns_org: false, has_seat: false, user_plan: 'free' })).toBe('free');

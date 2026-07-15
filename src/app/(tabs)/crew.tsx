@@ -1,281 +1,274 @@
 import { router, useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useState } from 'react';
-import { Platform, Pressable, Share, StyleSheet, View } from 'react-native';
-import { Body, Button, Caption, Card, Chip, Eyebrow, Input, Mono, PostureDot, Screen, Text, Title } from '@/components';
-import { confirm, notify } from '@/lib/alerts';
-import { useAuth } from '@/lib/auth/AuthProvider';
+import { Pressable, StyleSheet, View } from 'react-native';
 import {
-  ackMember,
-  createCrew,
-  createInvite,
-  fetchCrewSeatPool,
-  fetchState,
-  joinCrew,
-  orgApi,
-  setCrewSeat,
-} from '@/lib/data/client';
-import { CORNER_MAX, type AckKind, type CrewMemberView, type CrewView, type HomeState, type Posture } from '@/lib/data/types';
-import { color, hitSlop, radius, space } from '@/theme';
+  Body,
+  Button,
+  Caption,
+  Chip,
+  EmptyState,
+  HeroPanel,
+  InlineNotice,
+  Input,
+  IntegrityAgreement,
+  ListRow,
+  Mono,
+  PageHeader,
+  PostureDot,
+  Screen,
+  Section,
+  StatusPill,
+  Text,
+} from '@/components';
+import { notify } from '@/lib/alerts';
+import { useAuth } from '@/lib/auth/AuthProvider';
+import { ackMember, createCrew, fetchState, joinCrew, orgApi, updateAccountability } from '@/lib/data/client';
+import {
+  REACH_OUT_LABEL,
+  type AckKind,
+  type CrewMemberView,
+  type HomeState,
+  type Posture,
+  type ReachOutPreference,
+} from '@/lib/data/types';
+import { color, radius, space } from '@/theme';
 
-// Posture → the single contextual ack a crewmate can send.
 const ACK_FOR: Record<Posture, { kind: AckKind; label: string }> = {
   held: { kind: 'seen', label: 'Seen' },
   broke: { kind: 'respect', label: 'Respect' },
   dark: { kind: 'stand_up', label: 'Reach out' },
 };
 
-type SeatPool = NonNullable<Awaited<ReturnType<typeof fetchCrewSeatPool>>>;
-
 export default function Crew() {
   const { user, entitlement, refresh } = useAuth();
   const [state, setState] = useState<HomeState | null>(null);
-  // The captain's Corner-plan seat pool; null = no active Corner-seat sub.
-  const [pool, setPool] = useState<SeatPool | null>(null);
   const [newName, setNewName] = useState('');
   const [code, setCode] = useState('');
-  const [joinBusy, setJoinBusy] = useState(false);
-  const [createBusy, setCreateBusy] = useState(false);
-  const [inviteBusy, setInviteBusy] = useState(false);
+  const [honestyAccepted, setHonestyAccepted] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
   const [acking, setAcking] = useState<string | null>(null);
-  const [seatBusy, setSeatBusy] = useState<string | null>(null);
-  const [joinError, setJoinError] = useState<string | null>(null);
-  const [createError, setCreateError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [s, p] = await Promise.all([fetchState(), fetchCrewSeatPool()]);
-    setState(s);
-    setPool(p);
+    const next = await fetchState();
+    setState(next);
+    if (next?.accountability.honestyAcknowledged) setHonestyAccepted(true);
   }, []);
-  useFocusEffect(
-    useCallback(() => {
-      void load();
-    }, [load]),
-  );
+  useFocusEffect(useCallback(() => void load(), [load]));
 
   async function onAck(crewId: string, member: CrewMemberView) {
     const { kind } = ACK_FOR[member.posture];
     setAcking(member.id);
     const ok = await ackMember(crewId, member.id, kind);
     setAcking(null);
-    if (ok) {
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      await load();
-    } else {
-      notify('Could not send. Try again.');
-    }
+    if (!ok) return notify('Could not send. Try again.');
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    await load();
   }
 
   async function onCreate() {
     if (!entitlement?.canCreateCrew) return router.push('/paywall');
-    if (newName.trim().length < 2) return;
-    setCreateError(null);
-    setCreateBusy(true);
-    const res = await createCrew(newName.trim());
-    setCreateBusy(false);
+    if (newName.trim().length < 2 || !honestyAccepted) return;
+    setBusy('create');
+    setError(null);
+    const res = await createCrew(newName.trim(), honestyAccepted);
+    setBusy(null);
     if (res.upsell) return router.push('/paywall');
     if (res.id) {
       setNewName('');
       await Promise.all([load(), refresh()]);
-    } else if (res.error) setCreateError(res.error);
-  }
-
-  async function onSeat(crew: CrewView, member: CrewMemberView) {
-    if (!pool || seatBusy) return;
-    const seated = pool.seatedUserIds.includes(member.id);
-    if (seated) {
-      const ok = await confirm('Release this seat?', `${member.name} loses Pro until re-seated.`, 'Release');
-      if (!ok) return;
-    }
-    setSeatBusy(member.id);
-    const res = await setCrewSeat(crew.id, member.id, seated ? 'release' : 'assign');
-    setSeatBusy(null);
-    if (res.data.upsell) return router.push('/paywall');
-    if (res.data.error) notify(res.data.error);
-    await load();
+    } else setError(res.error ?? 'Could not start the Crew.');
   }
 
   async function onJoin() {
-    const trimmed = code.trim();
-    if (!trimmed) return;
-    setJoinError(null);
-    setJoinBusy(true);
-    const res = await joinCrew(trimmed);
+    if (!code.trim() || !honestyAccepted) return;
+    setBusy('join');
+    setError(null);
+    const res = await joinCrew(code.trim(), honestyAccepted);
     if (res.crewId) {
-      setJoinBusy(false);
       setCode('');
-      await load();
+      setBusy(null);
+      await Promise.all([load(), refresh()]);
       return;
     }
-    if (res.status === 402 || res.upsell) {
-      setJoinBusy(false);
-      return router.push('/paywall');
-    }
     if (res.status === 404) {
-      // Not a Corner code. It may be an organization code.
-      const orgRes = await orgApi.join(trimmed);
-      setJoinBusy(false);
+      const orgRes = await orgApi.join(code.trim());
+      setBusy(null);
       if (orgRes.ok) {
         setCode('');
-        if (orgRes.data.cornerFull) notify("You're in. That Corner is full, the owner will place you.");
-        else if (!orgRes.data.crewId) notify("You're in. The owner will place you in a Corner.");
         await load();
         return;
       }
-      if (orgRes.status === 404) {
-        setJoinError('That invite code is invalid.');
-        return;
-      }
-      setJoinError(orgRes.data.error ?? 'That invite code is invalid.');
+      setError(orgRes.data.error ?? 'That invite code is invalid.');
       return;
     }
-    setJoinBusy(false);
-    if (res.error) setJoinError(res.error);
+    setBusy(null);
+    if (res.upsell) return router.push('/paywall');
+    setError(res.error ?? 'Could not join that Crew.');
   }
 
-  async function onInvite(crewId: string) {
-    setInviteBusy(true);
-    const res = await createInvite(crewId);
-    setInviteBusy(false);
-    if (res.code) {
-      if (Platform.OS === 'web') notify(`Invite code: ${res.code}`, 'Share this with your Corner');
-      else await Share.share({ message: `Join my Corner on Reisei. Code: ${res.code}` });
-    } else if (res.error) notify(res.error);
+  async function setReachOut(preference: ReachOutPreference) {
+    setBusy('preference');
+    const result = await updateAccountability({ reachOutPreference: preference });
+    setBusy(null);
+    if (result.error) setError(result.error);
+    else await load();
   }
+
+  if (!state) return <Screen><Caption>Loading…</Caption></Screen>;
+  const captain = state.crews.find((crew) => crew.isCaptain);
 
   return (
     <Screen>
-      <Title>Corner</Title>
-      {state && state.crews.length === 0 && (
-        <Caption>Your Corner sees your check-ins and keeps you honest. Join with a code, or start your own.</Caption>
+      <PageHeader
+        title="Crew"
+        context={state.crews.length ? `${state.crews.length} active` : 'Private accountability'}
+        action={captain ? { label: 'Manage', onPress: () => router.push('/crew-manage') } : undefined}
+      />
+
+      {state.crews.length === 0 ? (
+        <>
+          <EmptyState
+            title="Do this with people who notice"
+            body="A Crew sees your Line and daily posture. Your private Log, notes, Bearings, and recovery details stay yours."
+          />
+          {!state.accountability.honestyAcknowledged ? (
+            <IntegrityAgreement accepted={honestyAccepted} onChange={setHonestyAccepted} />
+          ) : null}
+          <HeroPanel>
+            <Mono>JOIN A CREW</Mono>
+            <Input inCard placeholder="Invite code" autoCapitalize="characters" value={code} onChangeText={setCode} />
+            <Button label="Join Crew" onPress={onJoin} loading={busy === 'join'} disabled={!code.trim() || !honestyAccepted} />
+          </HeroPanel>
+          <Section label="Lead">
+            <Caption>Direct Pro covers you and two invited people in one private Crew.</Caption>
+            <Input placeholder="Crew name" value={newName} onChangeText={setNewName} />
+            <Button
+              label={entitlement?.canCreateCrew ? 'Start Crew' : 'Go Pro to lead'}
+              variant="secondary"
+              onPress={onCreate}
+              loading={busy === 'create'}
+              disabled={entitlement?.canCreateCrew ? newName.trim().length < 2 || !honestyAccepted : false}
+            />
+          </Section>
+        </>
+      ) : (
+        state.crews.map((crew) => (
+          <View key={crew.id} style={styles.crewBlock}>
+            <HeroPanel>
+              <View style={styles.head}>
+                <View style={styles.grow}>
+                  <Body color={color.textPrimary}>{crew.name}</Body>
+                  <Caption>{`${crew.memberCount} people · ${crew.heldCount} held today · ${crew.brokeCount} honest breaks`}</Caption>
+                </View>
+                <StatusPill label={`${crew.heldCount}/${crew.memberCount} held`} tone={crew.heldCount === crew.memberCount ? 'held' : 'quiet'} />
+              </View>
+              <View>
+                {crew.members.map((member) => (
+                  <MemberRow
+                    key={member.id}
+                    member={member}
+                    isSelf={member.id === user?.id}
+                    acking={acking === member.id}
+                    onAck={() => onAck(crew.id, member)}
+                  />
+                ))}
+              </View>
+            </HeroPanel>
+
+            <Section label="This week">
+              <InlineNotice
+                label="Crew Review"
+                body="This is not a score. It is a read on who showed up, who told the truth, and who may need a call."
+              />
+              <View style={styles.weekStats}>
+                <WeekStat label="Held" value={crew.week.held} />
+                <WeekStat label="Breaks" value={crew.week.broke} />
+                <WeekStat label="Quiet" value={crew.week.quiet} />
+                <WeekStat label="Recovered" value={crew.week.recovered} />
+              </View>
+              {crew.members.map((member) => (
+                <ListRow
+                  key={`week-${member.id}`}
+                  title={member.name}
+                  detail={`${member.week.held} held · ${member.week.broke} breaks · ${member.week.quiet} quiet · ${member.week.recovered} recovered`}
+                />
+              ))}
+            </Section>
+          </View>
+        ))
       )}
 
-      {state?.crews.map((crew) => (
-        <Card key={crew.id}>
-          <View style={styles.crewHead}>
-            <Body color={color.textPrimary} numberOfLines={1} style={styles.flexName}>
-              {crew.name}
-            </Body>
-            <Mono>{`HELD ${crew.heldCount}/${crew.memberCount}${crew.brokeCount ? ` · ${crew.brokeCount} BROKE` : ''} · ${crew.memberCount}/${CORNER_MAX}`}</Mono>
-          </View>
-          {pool !== null && crew.isCaptain && <Mono>{`SEATS ${pool.used}/${pool.total}`}</Mono>}
-          <View>
-            {crew.members.map((m) => (
-              <MemberRow
-                key={m.id}
-                crew={crew}
-                member={m}
-                isSelf={m.id === user?.id}
-                acking={acking === m.id}
-                onAck={() => onAck(crew.id, m)}
-                seat={
-                  pool !== null && crew.isCaptain
-                    ? {
-                        seated: pool.seatedUserIds.includes(m.id),
-                        busy: seatBusy !== null,
-                        onToggle: () => void onSeat(crew, m),
-                      }
-                    : null
-                }
+      {state.crews.length ? (
+        <Section label="When I go quiet">
+          <Caption>Tell your Crew what to do after a quiet day.</Caption>
+          <View style={styles.chips}>
+            {(Object.keys(REACH_OUT_LABEL) as ReachOutPreference[]).map((preference) => (
+              <Chip
+                key={preference}
+                label={REACH_OUT_LABEL[preference]}
+                active={state.accountability.reachOutPreference === preference}
+                onPress={() => setReachOut(preference)}
+                disabled={busy === 'preference'}
+                style={styles.fullChip}
               />
             ))}
           </View>
-          {crew.isCaptain && (
-            <Button label="Invite to Corner" variant="secondary" onPress={() => onInvite(crew.id)} loading={inviteBusy} />
-          )}
-        </Card>
-      ))}
+        </Section>
+      ) : null}
 
-      <Card>
-        <Eyebrow>Join a Corner</Eyebrow>
-        <Input inCard placeholder="Invite code" autoCapitalize="characters" value={code} onChangeText={setCode} />
-        {joinError && <Body color={color.actionText}>{joinError}</Body>}
-        <Button label="Join" variant="secondary" onPress={onJoin} loading={joinBusy} disabled={!code.trim()} />
-      </Card>
-
-      <Card>
-        <Eyebrow>Start a Corner</Eyebrow>
-        <Caption>Leading a Corner is Pro. Seats cover your people: everyone seated gets Pro.</Caption>
-        <Input inCard placeholder="Corner name" value={newName} onChangeText={setNewName} />
-        {createError && <Body color={color.actionText}>{createError}</Body>}
-        <Button
-          label={entitlement?.canCreateCrew ? 'Create Corner' : 'Go Pro to lead'}
-          onPress={onCreate}
-          loading={createBusy}
-          // Gate on the name only when the button actually creates; the Go Pro CTA stays live.
-          disabled={entitlement?.canCreateCrew ? newName.trim().length < 2 : false}
-        />
-      </Card>
+      {error ? <Body color={color.actionText}>{error}</Body> : null}
     </Screen>
   );
 }
 
-function MemberRow({
-  crew: _crew,
-  member,
-  isSelf,
-  acking,
-  onAck,
-  seat,
-}: {
-  crew: CrewView;
-  member: CrewMemberView;
-  isSelf: boolean;
-  acking: boolean;
-  onAck: () => void;
-  /** Captain seat control (null when the viewer has no seat pool or isn't captain). */
-  seat: { seated: boolean; busy: boolean; onToggle: () => void } | null;
-}) {
+function MemberRow({ member, isSelf, acking, onAck }: { member: CrewMemberView; isSelf: boolean; acking: boolean; onAck: () => void }) {
   const ack = ACK_FOR[member.posture];
+  const reachOut = member.posture === 'dark' && member.reachOutPreference ? REACH_OUT_LABEL[member.reachOutPreference] : null;
   return (
     <View style={styles.member}>
-      <PostureDot posture={member.posture} size={16} />
-      <View style={styles.memberBody}>
+      <PostureDot posture={member.posture} size={18} />
+      <View style={styles.grow}>
         <View style={styles.nameRow}>
-          <Text variant="bodyStrong" numberOfLines={1} style={styles.flexName}>
-            {member.name}
-          </Text>
-          {member.role === 'captain' && <Mono color={color.textSecondary}>CAPTAIN</Mono>}
+          <Text variant="bodyStrong" numberOfLines={1} style={styles.grow}>{member.name}</Text>
+          {member.role === 'captain' ? <Mono color={color.textSecondary}>CAPTAIN</Mono> : null}
         </View>
-        <Caption numberOfLines={1}>{member.line ?? 'No line drawn'}</Caption>
+        <Caption numberOfLines={2}>{member.line ?? 'No Line drawn'}</Caption>
+        {reachOut ? <Caption>{`If quiet: ${reachOut}`}</Caption> : null}
       </View>
-      {!isSelf &&
-        (member.ackedByMe ? (
-          <Mono>SENT</Mono>
-        ) : (
+      {!isSelf ? (
+        member.ackedByMe ? <Mono>SENT</Mono> : (
           <Pressable
             onPress={onAck}
             disabled={acking}
-            hitSlop={hitSlop}
             accessibilityRole="button"
             accessibilityLabel={`${ack.label}, ${member.name}`}
-            style={styles.ackBtn}
+            style={({ pressed }) => [styles.ack, pressed && styles.pressed, acking && styles.disabled]}
           >
-            <Text variant="mono" color={color.bg}>
-              {ack.label}
-            </Text>
+            <Mono color={color.bg}>{ack.label}</Mono>
           </Pressable>
-        ))}
-      {isSelf && member.acksReceived > 0 && <Mono>{`+${member.acksReceived}`}</Mono>}
-      {seat && (
-        <Chip label={seat.seated ? 'Seated' : 'Seat'} active={seat.seated} disabled={seat.busy} onPress={seat.onToggle} />
-      )}
+        )
+      ) : member.acksReceived > 0 ? <Mono>{`+${member.acksReceived}`}</Mono> : null}
     </View>
   );
 }
 
+function WeekStat({ label, value }: { label: string; value: number }) {
+  return <View style={styles.weekStat}><Mono>{value}</Mono><Caption>{label}</Caption></View>;
+}
+
 const styles = StyleSheet.create({
-  crewHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: space.sm },
-  member: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.sm },
-  memberBody: { flex: 1 },
-  nameRow: { flexDirection: 'row', alignItems: 'baseline', gap: space.sm },
-  flexName: { flex: 1 },
-  ackBtn: {
-    backgroundColor: color.action,
-    borderRadius: radius.sm,
-    paddingHorizontal: space.md,
-    paddingVertical: space.sm,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
+  crewBlock: { gap: space.xl },
+  head: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  grow: { flex: 1 },
+  member: { minHeight: 68, flexDirection: 'row', alignItems: 'center', gap: space.md, borderTopWidth: 1, borderTopColor: color.rule, paddingVertical: space.sm },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  ack: { minHeight: 44, justifyContent: 'center', backgroundColor: color.action, borderRadius: radius.sm, paddingHorizontal: space.sm },
+  pressed: { opacity: 0.78 },
+  disabled: { opacity: 0.5 },
+  weekStats: { flexDirection: 'row', gap: space.sm },
+  weekStat: { flex: 1, borderWidth: 1, borderColor: color.rule, borderRadius: radius.md, padding: space.sm, alignItems: 'center' },
+  chips: { gap: space.sm },
+  fullChip: { width: '100%', alignItems: 'flex-start' },
 });

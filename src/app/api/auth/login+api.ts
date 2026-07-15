@@ -5,9 +5,9 @@ import { adminPool, pool } from '@/server/db';
 const MAX_ATTEMPTS = 5;
 const LOCK_MINUTES = 15;
 
-// POST /api/auth/login { username, pin }
+// POST /api/auth/login { username, pin, remember? }
 export async function POST(req: Request) {
-  let b: { username?: unknown; pin?: unknown };
+  let b: { username?: unknown; pin?: unknown; remember?: unknown };
   try {
     b = await req.json();
   } catch {
@@ -15,6 +15,8 @@ export async function POST(req: Request) {
   }
   const username = normalizeUsername(typeof b.username === 'string' ? b.username : '');
   const pin = typeof b.pin === 'string' ? b.pin : '';
+  // Default to remembered for existing clients that do not yet send this field.
+  const remember = b.remember !== false;
   if (!username || !pin) return Response.json({ error: 'Enter your username and PIN.' }, { status: 400 });
 
   const { rows } = await pool().query(`select * from auth_user_by_username($1)`, [username]);
@@ -32,7 +34,7 @@ export async function POST(req: Request) {
   }
 
   await pool().query(`select auth_clear_pin_failures($1)`, [u.id]);
-  const token = await createSession(u.id, req.headers.get('user-agent'));
+  const token = await createSession(u.id, req.headers.get('user-agent'), remember);
   const user = (
     await adminPool().query(
       `select id, name, username, tz, plan, email, email_verified as "emailVerified", email_required as "emailRequired"
@@ -40,5 +42,5 @@ export async function POST(req: Request) {
       [u.id],
     )
   ).rows[0];
-  return Response.json({ token, user }, { headers: { 'set-cookie': sessionCookie(token) } });
+  return Response.json({ token, user }, { headers: { 'set-cookie': sessionCookie(token, remember) } });
 }

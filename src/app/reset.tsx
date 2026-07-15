@@ -24,7 +24,7 @@ export default function Reset() {
   const [count, setCount] = useState(PHASE_MS / 1000);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
-  const scale = useRef(new Animated.Value(1)).current;
+  const [scale] = useState(() => new Animated.Value(1));
   const reduceMotion = useRef(false);
 
   useEffect(() => {

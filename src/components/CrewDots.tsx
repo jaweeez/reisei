@@ -28,7 +28,7 @@ export function CrewDots({ members }: { members: CrewMemberView[] }) {
     <View
       style={styles.row}
       accessible
-      accessibilityLabel={`Corner: ${held} held, ${broke} honest breaks, ${dark} not logged yet`}
+      accessibilityLabel={`Crew: ${held} held, ${broke} honest breaks, ${dark} not logged yet`}
     >
       {members.map((m) => (
         <PostureDot key={m.id} posture={m.posture} />

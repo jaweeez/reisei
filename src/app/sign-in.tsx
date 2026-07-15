@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Body, Button, Eyebrow, Hero, Input, Mono, Screen, VialMark } from '@/components';
 import { useAuth } from '@/lib/auth/AuthProvider';
-import { color, space } from '@/theme';
+import { color, radius, space } from '@/theme';
 
 const BACK_SLOP = { top: 14, bottom: 14, left: 12, right: 12 };
 
@@ -16,6 +16,7 @@ export default function SignIn() {
   const [pin, setPin] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -24,7 +25,7 @@ export default function SignIn() {
   async function submit() {
     setBusy(true);
     setError(null);
-    const err = mode === 'register' ? await register(username, pin, name, email) : await login(username, pin);
+    const err = mode === 'register' ? await register(username, pin, name, email) : await login(username, pin, rememberMe);
     setBusy(false);
     if (err) setError(err);
     else void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -64,6 +65,24 @@ export default function SignIn() {
           <Eyebrow>Username</Eyebrow>
           <Input placeholder="e.g. mike" value={username} onChangeText={setUsername} autoCapitalize="none" autoCorrect={false} />
         </View>
+
+        {mode === 'login' && (
+          <Pressable
+            onPress={() => setRememberMe((current) => !current)}
+            accessibilityRole="checkbox"
+            accessibilityLabel="Remember this device"
+            accessibilityState={{ checked: rememberMe }}
+            style={styles.remember}
+          >
+            <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
+              {rememberMe && <Mono style={styles.checkmark}>✓</Mono>}
+            </View>
+            <View style={styles.rememberCopy}>
+              <Body>Remember this device</Body>
+              <Mono style={styles.rememberHint}>Keeps you signed in for 90 days.</Mono>
+            </View>
+          </Pressable>
+        )}
         <View style={styles.field}>
           <Eyebrow>PIN · 4 to 8 digits</Eyebrow>
           <Input placeholder="4 to 8 digits" value={pin} onChangeText={setPin} keyboardType="number-pad" secureTextEntry maxLength={8} />
@@ -96,4 +115,18 @@ const styles = StyleSheet.create({
   head: { alignItems: 'center', marginTop: space.section },
   form: { gap: space.md, marginTop: space.section },
   field: { gap: space.xs },
+  remember: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.xs },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: radius.sm,
+    borderWidth: 1.5,
+    borderColor: color.ruleStrong,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: { backgroundColor: color.action, borderColor: color.action },
+  checkmark: { color: color.bg, fontSize: 15, lineHeight: 18 },
+  rememberCopy: { flex: 1, gap: 2 },
+  rememberHint: { color: color.textSecondary, fontSize: 11 },
 });

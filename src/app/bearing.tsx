@@ -21,8 +21,10 @@ export default function Bearing() {
 
   const load = useCallback(async () => setData(await fetchBearing()), []);
   useEffect(() => {
-    void load();
-  }, [load]);
+    let active = true;
+    void fetchBearing().then((next) => { if (active) setData(next); });
+    return () => { active = false; };
+  }, []);
 
   async function toggle(ideology: string) {
     if (!data) return;

@@ -45,8 +45,8 @@ export default function Privacy() {
         <P>
           Account: a username and a PIN (the PIN is stored only as a one-way hash, never in the clear). An email is
           optional, for account recovery. What you create in the app: your line, your daily check-ins and any notes,
-          your private log entries, your responses to the Bearing, and completed Resets. Your Corner (the small crew
-          you check in with): which Corners you join and the acknowledgements you send and receive. If you enable
+          your private log entries, your responses to the Bearing, and completed Resets. Your Crew (the small group
+          you check in with): which Crews you join and the acknowledgements you send and receive. If you enable
           notifications, a device push token. Basic technical data needed to run the service (for example, timezone
           and app version).
         </P>
@@ -54,7 +54,7 @@ export default function Privacy() {
 
       <S title="How we use it">
         <P>
-          To run the app: record your check-ins and streak, show your Corner that you showed up, and keep you signed
+          To run the app: record your check-ins and streak, show your Crew that you showed up, and keep you signed
           in. To personalize the Bearing to what you have recently written. To send you a verification or
           PIN-reset code if you add an email, and to send notifications you turn on. We do not use your data for
           advertising, and we do not sell it.
@@ -68,14 +68,14 @@ export default function Privacy() {
           MongoDB), which turn it into a short numerical representation (an embedding) and a brief written reflection.
           We use these providers under their commercial API terms, under which your text is not used to train their
           models by default. They may retain it briefly to monitor for abuse or safety, which is not model training.
-          Your log is private and is never shown to your Corner.
+          Your Log is private and is never shown to your Crew.
         </P>
       </S>
 
       <S title="Who we share it with">
         <P>
-          Your Corner sees your daily posture (held, broke, or nothing yet) and your line. That is the point of a
-          Corner. Beyond that, we share data only with the service providers that run Reisei on our behalf: hosting
+          Your Crew sees your daily posture (held, broke, or nothing yet) and your Line. That is the point of a
+          Crew. Beyond that, we share data only with the service providers that run Reisei on our behalf: hosting
           (Vercel), the database (Neon), email delivery (Amazon SES), AI processing (Anthropic and Voyage AI,
           above), push notifications (Expo), and, if you buy Pro, payment processing (Stripe and RevenueCat). They
           may use it only to provide their service to us.
@@ -86,8 +86,8 @@ export default function Privacy() {
         <P>
           We keep your data while your account is active. You can delete your account at any time in Settings, under
           Danger zone: this permanently removes your account and its data (your line, check-ins, streak, log,
-          profile, and Corner standing) and cannot be undone. If you captain a Corner, deleting your account removes
-          that Corner. Residual copies may persist in encrypted backups for a short time before they cycle out, and
+          profile, and Crew standing) and cannot be undone. If you captain a Crew, deleting your account removes
+          that Crew. Residual copies may persist in encrypted backups for a short time before they cycle out, and
           our providers may keep limited records where the law requires.
         </P>
         <P>

@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { authApi } from '@/lib/auth/client';
+import { configureIap, logOutIap, onCustomerInfoUpdated } from '@/lib/billing/iap';
 import type { Entitlement, Me } from '@/lib/data/types';
 
 type Status = 'loading' | 'authed' | 'guest';
@@ -10,7 +11,7 @@ interface AuthValue {
   entitlement: Entitlement | null;
   refresh: () => Promise<void>;
   register: (username: string, pin: string, name: string, email: string) => Promise<string | null>;
-  login: (username: string, pin: string) => Promise<string | null>;
+  login: (username: string, pin: string, remember?: boolean) => Promise<string | null>;
   logout: () => Promise<void>;
   deleteAccount: (pin: string) => Promise<string | null>;
 }
@@ -36,8 +37,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    let active = true;
+    void authApi.me().then((res) => {
+      if (!active) return;
+      if (res.ok && res.data.user) {
+        setUser(res.data.user);
+        setEntitlement(res.data.entitlement ?? null);
+        setStatus('authed');
+      } else {
+        setUser(null);
+        setEntitlement(null);
+        setStatus('guest');
+      }
+    });
+    return () => { active = false; };
+  }, []);
+
+  // Keep RevenueCat's customer identity aligned with Reisei's authenticated
+  // account. CustomerInfo changes (purchase, renewal, restore) trigger a
+  // server entitlement refresh; the webhook remains the source of truth.
+  useEffect(() => {
+    if (!user?.id) return;
+    let disposed = false;
+    let unsubscribe: () => void = () => undefined;
+
+    void configureIap(user.id).then(() => {
+      if (!disposed) unsubscribe = onCustomerInfoUpdated(() => void refresh());
+    });
+
+    return () => {
+      disposed = true;
+      unsubscribe();
+    };
+  }, [user?.id, refresh]);
 
   const register = useCallback(
     async (username: string, pin: string, name: string, email: string) => {
@@ -52,8 +84,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const login = useCallback(
-    async (username: string, pin: string) => {
-      const r = await authApi.login(username, pin);
+    async (username: string, pin: string, remember = true) => {
+      const r = await authApi.login(username, pin, remember);
       if (r.token) {
         await refresh();
         return null;
@@ -64,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const logout = useCallback(async () => {
+    await logOutIap();
     await authApi.logout();
     setUser(null);
     setEntitlement(null);
@@ -73,6 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const deleteAccount = useCallback(async (pin: string) => {
     const res = await authApi.deleteAccount(pin);
     if (res.ok) {
+      await logOutIap();
       setUser(null);
       setEntitlement(null);
       setStatus('guest');

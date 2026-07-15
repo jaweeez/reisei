@@ -15,6 +15,7 @@ const GRANT = new Set([
 ]);
 // CANCELLATION only stops auto-renew — access continues until EXPIRATION.
 const REVOKE = new Set(['EXPIRATION']);
+const REISEI_PRO_ENTITLEMENT = 'Reisei Pro';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -25,7 +26,7 @@ export async function POST(req: Request) {
     return Response.json({ error: 'unauthorized' }, { status: 401 });
   }
 
-  let body: { event?: { type?: unknown; app_user_id?: unknown } };
+  let body: { event?: { type?: unknown; app_user_id?: unknown; entitlement_ids?: unknown } };
   try {
     body = await req.json();
   } catch {
@@ -34,7 +35,13 @@ export async function POST(req: Request) {
   const ev = body.event;
   const type = typeof ev?.type === 'string' ? ev.type : '';
   const userId = typeof ev?.app_user_id === 'string' ? ev.app_user_id : '';
+  const entitlementIds = Array.isArray(ev?.entitlement_ids) ? ev.entitlement_ids : [];
+  const isReiseiPro = entitlementIds.some((id) => id === REISEI_PRO_ENTITLEMENT);
   if (!UUID_RE.test(userId)) return Response.json({ ok: true });
+  // A project may gain future entitlements; only the named mobile Pro
+  // entitlement may change Reisei's plan. Parse defensively because RevenueCat
+  // does not include every optional field on every event type.
+  if (!isReiseiPro) return Response.json({ ok: true });
 
   const p = adminPool();
   if (GRANT.has(type)) {

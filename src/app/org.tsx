@@ -135,7 +135,7 @@ export default function Org() {
       </Card>
 
       <Card>
-        <Eyebrow>Corners</Eyebrow>
+        <Eyebrow>Crews</Eyebrow>
         {org.corners.map((c) => (
           <View key={c.id} style={styles.row}>
             <Body color={color.textPrimary} numberOfLines={1} style={styles.flexName}>
@@ -151,9 +151,9 @@ export default function Org() {
             />
           </View>
         ))}
-        <Input inCard placeholder="New Corner name" value={newCorner} onChangeText={setNewCorner} />
+        <Input inCard placeholder="New Crew name" value={newCorner} onChangeText={setNewCorner} />
         <Button
-          label="Start a Corner"
+          label="Start a Crew"
           variant="secondary"
           onPress={onCreateCorner}
           loading={cornerBusy}
@@ -187,7 +187,7 @@ export default function Org() {
         {org.invites.map((inv) => (
           <View key={inv.code} style={styles.row}>
             <Mono style={styles.flexName}>{inv.code}</Mono>
-            <Caption>{inv.cornerName ?? 'no Corner'}</Caption>
+            <Caption>{inv.cornerName ?? 'no Crew'}</Caption>
             <Button
               label="Revoke"
               variant="ghost"

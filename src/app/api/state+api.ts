@@ -1,9 +1,10 @@
 import { currentUser } from '@/server/auth/session';
 import { withUser } from '@/server/db';
-import { localDateFor } from '@/server/streak';
+import { dayDiff, localDateFor } from '@/server/streak';
 import { IDEOLOGY_LABEL } from '@/data/corpus/types';
 import type { CrewView, HomeState, LineView, RecoveryPlan, Verdict } from '@/lib/data/types';
 import { resolveUserBearing } from '@/server/bearing/resolve';
+import { cycleDay, cycleReviewDue } from '@/server/cycles';
 
 // GET /api/state → everything Today + Crew need, RLS-filtered: the active line,
 // today's verdict, the streak (+ integrity), and each crew with per-member posture.
@@ -15,11 +16,21 @@ export async function GET(req: Request) {
     const me = (await c.query(`select tz from users where id = current_app_user()`)).rows[0] as { tz?: string } | undefined;
     const today = localDateFor(me?.tz ?? 'UTC');
 
-    const [lineRes, todayRes, streakRes, crewsRes, membersRes, memberLinesRes, verdictsRes, acksRes, nudgeRes, resetRes, bearingRes, recoveryTodayRes, recoveryCarryRes] =
+    const [lineRes, cycleRes, profileRes, todayRes, streakRes, crewsRes, membersRes, memberLinesRes, memberProfilesRes, verdictsRes, weekVerdictsRes, acksRes, nudgeRes, resetRes, bearingRes, recoveryTodayRes, recoveryCarryRes] =
       await Promise.all([
       c.query(
         `select id, statement, kind, to_char(start_local_date,'YYYY-MM-DD') as "startLocalDate"
            from lines where user_id = current_app_user() and status = 'active' limit 1`,
+      ),
+      c.query(
+        `select id, to_char(start_local_date,'YYYY-MM-DD') as "startLocalDate",
+                to_char(review_local_date,'YYYY-MM-DD') as "reviewLocalDate"
+           from line_cycles where user_id = current_app_user() and outcome = 'active' limit 1`,
+      ),
+      c.query(
+        `select honesty_acknowledged_at is not null as "honestyAcknowledged",
+                reach_out_preference as "reachOutPreference"
+           from accountability_profiles where user_id = current_app_user()`,
       ),
       c.query(`select verdict from check_ins where user_id = current_app_user() and local_date = $1`, [today]),
       c.query(
@@ -29,8 +40,18 @@ export async function GET(req: Request) {
       ),
       c.query(`select id, name, captain_id from crews order by created_at`),
       c.query(`select cm.crew_id, cm.user_id, cm.role, u.name from crew_members cm join users u on u.id = cm.user_id`),
-      c.query(`select user_id, statement from lines where status = 'active'`),
+      c.query(
+        `select user_id, statement, to_char(start_local_date,'YYYY-MM-DD') as start_local_date
+           from lines where status = 'active'`,
+      ),
+      c.query(`select user_id, reach_out_preference from accountability_profiles`),
       c.query(`select user_id, verdict from check_ins where local_date = $1`, [today]),
+      c.query(
+        `select user_id, to_char(local_date,'YYYY-MM-DD') as local_date, verdict
+           from check_ins where local_date between ($1::date - 6) and $1::date
+          order by user_id, local_date`,
+        [today],
+      ),
       c.query(`select from_user_id, to_user_id from crew_acks where local_date = $1`, [today]),
       c.query(`select body from nudges where user_id = current_app_user() and local_date = $1 order by sent_at desc limit 1`, [today]),
       c.query(`select 1 from practices where user_id = current_app_user() and kind = 'reset' and local_date = $1 limit 1`, [today]),
@@ -64,12 +85,26 @@ export async function GET(req: Request) {
     ]);
 
     const line = (lineRes.rows[0] as LineView | undefined) ?? null;
+    const cycleRow = cycleRes.rows[0] as { id: string; startLocalDate: string; reviewLocalDate: string } | undefined;
+    const profileRow = profileRes.rows[0] as { honestyAcknowledged: boolean; reachOutPreference: HomeState['accountability']['reachOutPreference'] } | undefined;
     const s = streakRes.rows[0] ?? {};
     const bearingRow = bearingRes.rows[0] as {
       ideology: string; principle: string | null; prompt: string | null; quote_text: string | null; quote_ref: string | null; logged: boolean;
     } | undefined;
-    const lineByUser = new Map<string, string>(memberLinesRes.rows.map((r) => [r.user_id as string, r.statement as string]));
+    const lineByUser = new Map<string, { statement: string; start: string }>(
+      memberLinesRes.rows.map((r) => [r.user_id as string, { statement: r.statement as string, start: r.start_local_date as string }]),
+    );
+    const preferenceByUser = new Map(
+      memberProfilesRes.rows.map((r) => [r.user_id as string, (r.reach_out_preference as HomeState['accountability']['reachOutPreference']) ?? null]),
+    );
     const verdictByUser = new Map<string, Verdict>(verdictsRes.rows.map((r) => [r.user_id as string, r.verdict as Verdict]));
+    const weekByUser = new Map<string, { date: string; verdict: Verdict }[]>();
+    for (const r of weekVerdictsRes.rows) {
+      const uid = r.user_id as string;
+      const rows = weekByUser.get(uid) ?? [];
+      rows.push({ date: r.local_date as string, verdict: r.verdict as Verdict });
+      weekByUser.set(uid, rows);
+    }
     const acksReceived = new Map<string, number>();
     const ackedByMe = new Set<string>();
     for (const r of acksRes.rows) {
@@ -85,16 +120,38 @@ export async function GET(req: Request) {
           const uid = m.user_id as string;
           const v = verdictByUser.get(uid);
           const posture: 'held' | 'broke' | 'dark' = v === 'held' ? 'held' : v === 'broke' ? 'broke' : 'dark';
+          const weekRows = weekByUser.get(uid) ?? [];
+          const activeLine = lineByUser.get(uid);
+          const eligibleDays = activeLine ? Math.min(7, Math.max(1, dayDiff(activeLine.start, today) + 1)) : 0;
+          let recovered = 0;
+          for (let i = 0; i < weekRows.length; i += 1) {
+            if (weekRows[i].verdict !== 'broke') continue;
+            const next = weekRows.slice(i + 1).find((row) => row.verdict === 'held');
+            if (next && dayDiff(weekRows[i].date, next.date) <= 2) recovered += 1;
+          }
+          const held = weekRows.filter((row) => row.verdict === 'held').length;
+          const broke = weekRows.filter((row) => row.verdict === 'broke').length;
           return {
             id: uid,
             name: m.name as string,
             role: m.role as 'member' | 'captain',
             posture,
-            line: lineByUser.get(uid) ?? null,
+            line: activeLine?.statement ?? null,
             acksReceived: acksReceived.get(uid) ?? 0,
             ackedByMe: ackedByMe.has(uid),
+            reachOutPreference: preferenceByUser.get(uid) ?? null,
+            week: { held, broke, quiet: Math.max(0, eligibleDays - held - broke), recovered },
           };
         });
+      const week = members.reduce(
+        (sum, member) => ({
+          held: sum.held + member.week.held,
+          broke: sum.broke + member.week.broke,
+          quiet: sum.quiet + member.week.quiet,
+          recovered: sum.recovered + member.week.recovered,
+        }),
+        { held: 0, broke: 0, quiet: 0, recovered: 0 },
+      );
       return {
         id: crew.id as string,
         name: crew.name as string,
@@ -103,12 +160,26 @@ export async function GET(req: Request) {
         heldCount: members.filter((m) => m.posture === 'held').length,
         brokeCount: members.filter((m) => m.posture === 'broke').length,
         members,
+        week,
       };
     });
 
     return {
       localDate: today,
       line,
+      cycle: cycleRow
+        ? {
+            id: cycleRow.id,
+            startLocalDate: cycleRow.startLocalDate,
+            reviewLocalDate: cycleRow.reviewLocalDate,
+            day: cycleDay(cycleRow.startLocalDate, today),
+            reviewDue: cycleReviewDue(cycleRow.reviewLocalDate, today),
+          }
+        : null,
+      accountability: {
+        honestyAcknowledged: !!profileRow?.honestyAcknowledged,
+        reachOutPreference: profileRow?.reachOutPreference ?? null,
+      },
       todayVerdict: ((todayRes.rows[0]?.verdict as Verdict) ?? null),
       streak: {
         current: Number(s.current ?? 0),

@@ -244,6 +244,74 @@ export async function cornerSeatPool(sponsorId: string): Promise<{ total: number
   return { total: sub.seats, used: rows.length, seatedUserIds: rows.map((r) => r.user_id as string) };
 }
 
+/** Direct Pro covers the subscriber plus two invited members. */
+export async function proCoveragePool(
+  sponsorId: string,
+): Promise<{ total: number; used: number; seatedUserIds: string[] } | null> {
+  const p = adminPool();
+  const sponsor = (await p.query(`select plan from users where id = $1`, [sponsorId])).rows[0] as { plan?: string } | undefined;
+  if (sponsor?.plan !== 'pro') return null;
+  const rows = (await p.query(`select user_id from pro_covered_members where sponsor_id = $1 order by created_at`, [sponsorId])).rows;
+  return { total: 3, used: 1 + rows.length, seatedUserIds: [sponsorId, ...rows.map((r) => r.user_id as string)] };
+}
+
+export async function proCoverage(
+  sponsorId: string,
+  targetUserId: string,
+  action: 'assign' | 'release',
+): Promise<SeatResult> {
+  const client = await adminPool().connect();
+  try {
+    await client.query('begin');
+    const sponsor = (await client.query(`select plan from users where id = $1 for update`, [sponsorId])).rows[0] as
+      | { plan?: string }
+      | undefined;
+    if (sponsor?.plan !== 'pro') {
+      await client.query('rollback');
+      return { ok: false, reason: 'no_sub' };
+    }
+    if (action === 'assign') {
+      const already = (
+        await client.query(`select 1 from pro_covered_members where sponsor_id = $1 and user_id = $2`, [sponsorId, targetUserId])
+      ).rowCount;
+      if (!already) {
+        const used = Number(
+          (await client.query(`select count(*)::int n from pro_covered_members where sponsor_id = $1`, [sponsorId])).rows[0].n,
+        );
+        if (used >= 2) {
+          await client.query('rollback');
+          return { ok: false, reason: 'no_seat' };
+        }
+        await client.query(
+          `insert into pro_covered_members (sponsor_id, user_id) values ($1, $2)
+           on conflict (sponsor_id, user_id) do nothing`,
+          [sponsorId, targetUserId],
+        );
+      }
+    } else {
+      const removed = await client.query(`delete from pro_covered_members where sponsor_id = $1 and user_id = $2`, [
+        sponsorId,
+        targetUserId,
+      ]);
+      if (!removed.rowCount) {
+        await client.query('rollback');
+        return { ok: false, reason: 'not_assigned' };
+      }
+    }
+    const covered = Number(
+      (await client.query(`select count(*)::int n from pro_covered_members where sponsor_id = $1`, [sponsorId])).rows[0].n,
+    );
+    await client.query('commit');
+    return { ok: true, seats: { total: 3, used: 1 + covered } };
+  } catch (e) {
+    try { await client.query('rollback'); } catch { /* ignore */ }
+    if ((e as { code?: string }).code === '23505') return { ok: false, reason: 'no_seat' };
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Org invites
 // ---------------------------------------------------------------------------

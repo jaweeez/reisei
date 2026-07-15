@@ -1,6 +1,6 @@
 import { currentUser } from '@/server/auth/session';
 import { adminPool } from '@/server/db';
-import { cornerSeat, cornerSeatPool } from '@/server/org/store';
+import { cornerSeat, cornerSeatPool, proCoverage, proCoveragePool } from '@/server/org/store';
 
 // GET  /api/crew/seats → the caller's Corner-plan seat pool ({ pool: null } without one).
 // POST /api/crew/seats { crewId, userId, action: 'assign' | 'release' } — the Corner
@@ -9,8 +9,10 @@ import { cornerSeat, cornerSeatPool } from '@/server/org/store';
 export async function GET(req: Request) {
   const userId = await currentUser(req);
   if (!userId) return Response.json({ error: 'unauthenticated' }, { status: 401 });
-  const pool = await cornerSeatPool(userId);
-  return Response.json({ pool });
+  const crewPool = await cornerSeatPool(userId);
+  if (crewPool) return Response.json({ pool: { ...crewPool, kind: 'crew' } });
+  const proPool = await proCoveragePool(userId);
+  return Response.json({ pool: proPool ? { ...proPool, kind: 'pro' } : null });
 }
 export async function POST(req: Request) {
   const callerId = await currentUser(req);
@@ -36,17 +38,34 @@ export async function POST(req: Request) {
   const isMember = (
     await p.query(`select 1 from crew_members where crew_id = $1 and user_id = $2`, [crewId, targetId])
   ).rowCount;
-  if (!isMember) return Response.json({ error: 'That person is not in this Corner.' }, { status: 404 });
+  if (!isMember) return Response.json({ error: 'That person is not in this Crew.' }, { status: 404 });
 
-  const res = await cornerSeat(callerId, targetId, action);
+  const proPool = await proCoveragePool(callerId);
+  const res = proPool ? await proCoverage(callerId, targetId, action) : await cornerSeat(callerId, targetId, action);
   if (!res.ok) {
     if (res.reason === 'no_sub') {
-      return Response.json({ error: 'No Corner seats on your plan. Buy seats to cover your people.', upsell: true }, { status: 402 });
+      return Response.json({ error: 'Your plan has no Crew coverage. Upgrade to cover your people.', upsell: true }, { status: 402 });
     }
     if (res.reason === 'no_seat') {
       return Response.json({ error: 'No seats open. Add seats in billing.' }, { status: 409 });
     }
     return Response.json({ error: 'That person has no seat to release.' }, { status: 409 });
+  }
+  if (action === 'release') {
+    const targetHasOtherAccess = (
+      await p.query(
+        `select
+           (u.plan = 'pro') or exists(
+             select 1 from seat_assignments sa join subscriptions s on s.id = sa.subscription_id
+              where sa.user_id = u.id and s.status in ('active','trialing')
+           ) as premium
+           from users u where u.id = $1`,
+        [targetId],
+      )
+    ).rows[0]?.premium;
+    if (!targetHasOtherAccess) {
+      await p.query(`delete from crew_members where crew_id = $1 and user_id = $2 and role = 'member'`, [crewId, targetId]);
+    }
   }
   return Response.json({ seats: res.seats });
 }

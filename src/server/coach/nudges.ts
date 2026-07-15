@@ -31,7 +31,7 @@ const first = (name: string) => name?.split(' ')[0] || 'you';
 
 /** The verbatim string table. One place so the voice is enforced once. */
 export const NUDGE_COPY: Record<NudgeKind, (c: TickContext) => string> = {
-  stand_up: (c) => `${first(c.name)}, someone in your Corner reached out. Your line's still open. Check in today.`,
+  stand_up: (c) => `${first(c.name)}, someone in your Crew reached out. Your Line is still open. Check in today.`,
   after_break: () => `You logged the break yesterday. That's the honest move. Check in today.`,
   after_miss: () => `Yesterday got away from you. No story to tell yourself, just check in today.`,
   at_risk: (c) => `${c.current}-day line, still open. Before the day's gone: how are you actually doing?`,

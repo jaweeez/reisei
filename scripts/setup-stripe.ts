@@ -3,6 +3,7 @@ import { config } from 'dotenv';
 config({ path: '.env.local' });
 config({ path: '.env' });
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
 import Stripe from 'stripe';
 
 // Idempotently creates the Reisei products + prices in your Stripe account and
@@ -13,11 +14,17 @@ import Stripe from 'stripe';
 //
 // Prereq: STRIPE_SECRET_KEY set to your sk_test_… key in .env.local.
 // The premium pricing (see the monetization spec):
-//   Pro  — $6.99/mo · $49.99/yr             (individual; also sold on mobile via RevenueCat)
-//   Seat — $4.99/seat/mo · $49.99/seat/yr   (a Corner's 2–8 seats; quantity = seats, web only)
+//   Pro  — $12.99/mo · $99/yr               (subscriber plus two covered people)
+//   Crew — $24.99/mo · $199/yr              (flat plan for up to eight, web only)
 //   Org  — $3.99/seat/mo · $39.99/seat/yr   (organization, 9+ seats, multi-Corner, web only)
 
 const CURRENCY = process.env.REISEI_CURRENCY || 'usd';
+const WEBHOOK_URL = process.env.STRIPE_WEBHOOK_URL || 'https://www.reiseiapp.com/api/webhooks/stripe';
+const WEBHOOK_EVENTS: Stripe.WebhookEndpointCreateParams.EnabledEvent[] = [
+  'checkout.session.completed',
+  'customer.subscription.updated',
+  'customer.subscription.deleted',
+];
 
 type ProductKey = 'pro' | 'seat' | 'org';
 
@@ -31,16 +38,16 @@ interface PriceSpec {
 }
 
 const PRODUCTS: Record<ProductKey, { name: string; description: string }> = {
-  pro: { name: 'Reisei Pro', description: 'Create and captain a Corner, full history, every school, the full log.' },
-  seat: { name: 'Reisei Corner Seat', description: 'A sponsored Corner seat (2 to 8) — one comped Pro membership.' },
-  org: { name: 'Reisei Org Seat', description: 'An organization seat (9+, volume pricing) — one comped Pro membership.' },
+  pro: { name: 'Reisei Pro', description: 'One private Crew for three people, Line Cycles, full history, every school, and the full Log.' },
+  seat: { name: 'Reisei Crew', description: 'One private Crew with full member access for up to eight people.' },
+  org: { name: 'Reisei Org Seat', description: 'An organization seat (9+, volume pricing) for one covered member.' },
 };
 
 const PRICES: PriceSpec[] = [
-  { envKey: 'STRIPE_PRICE_PRO_MONTHLY', tag: 'pro_monthly', product: 'pro', amount: 699, interval: 'month', nickname: 'Reisei Pro — Monthly' },
-  { envKey: 'STRIPE_PRICE_PRO_ANNUAL', tag: 'pro_annual', product: 'pro', amount: 4999, interval: 'year', nickname: 'Reisei Pro — Annual' },
-  { envKey: 'STRIPE_PRICE_SEAT_MONTHLY', tag: 'seat_monthly', product: 'seat', amount: 499, interval: 'month', nickname: 'Reisei Corner Seat — Monthly' },
-  { envKey: 'STRIPE_PRICE_SEAT_ANNUAL', tag: 'seat_annual', product: 'seat', amount: 4999, interval: 'year', nickname: 'Reisei Corner Seat — Annual' },
+  { envKey: 'STRIPE_PRICE_PRO_MONTHLY', tag: 'pro_monthly_v15', product: 'pro', amount: 1299, interval: 'month', nickname: 'Reisei Pro 1.5 Monthly' },
+  { envKey: 'STRIPE_PRICE_PRO_ANNUAL', tag: 'pro_annual_v15', product: 'pro', amount: 9900, interval: 'year', nickname: 'Reisei Pro 1.5 Annual' },
+  { envKey: 'STRIPE_PRICE_SEAT_MONTHLY', tag: 'crew_monthly_v15', product: 'seat', amount: 2499, interval: 'month', nickname: 'Reisei Crew 1.5 Monthly' },
+  { envKey: 'STRIPE_PRICE_SEAT_ANNUAL', tag: 'crew_annual_v15', product: 'seat', amount: 19900, interval: 'year', nickname: 'Reisei Crew 1.5 Annual' },
   { envKey: 'STRIPE_PRICE_ORG_MONTHLY', tag: 'org_monthly', product: 'org', amount: 399, interval: 'month', nickname: 'Reisei Org Seat — Monthly' },
   { envKey: 'STRIPE_PRICE_ORG_ANNUAL', tag: 'org_annual', product: 'org', amount: 3999, interval: 'year', nickname: 'Reisei Org Seat — Annual' },
 ];
@@ -100,6 +107,38 @@ function writeEnv(values: Record<string, string>): void {
   writeFileSync(envPath, env);
 }
 
+async function ensureWebhook(stripe: Stripe): Promise<Record<string, string>> {
+  const endpoints = await stripe.webhookEndpoints.list({ limit: 100 });
+  const configuredId = process.env.STRIPE_WEBHOOK_ENDPOINT_ID;
+  const existing = endpoints.data.find(
+    (endpoint) =>
+      endpoint.status === 'enabled' &&
+      (endpoint.id === configuredId || endpoint.url === WEBHOOK_URL),
+  );
+
+  if (existing && process.env.STRIPE_WEBHOOK_SECRET) {
+    await stripe.webhookEndpoints.update(existing.id, {
+      url: WEBHOOK_URL,
+      enabled_events: WEBHOOK_EVENTS,
+    });
+    console.log(`  = webhook ${existing.id} (reused)`);
+    return { STRIPE_WEBHOOK_ENDPOINT_ID: existing.id };
+  }
+
+  const created = await stripe.webhookEndpoints.create({
+    url: WEBHOOK_URL,
+    enabled_events: WEBHOOK_EVENTS,
+    description: 'Reisei production subscription sync',
+    metadata: { app: 'reisei' },
+  });
+  if (!created.secret) throw new Error('Stripe did not return a webhook signing secret.');
+  console.log(`  + webhook ${created.id} (created)`);
+  return {
+    STRIPE_WEBHOOK_ENDPOINT_ID: created.id,
+    STRIPE_WEBHOOK_SECRET: created.secret,
+  };
+}
+
 async function main() {
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key || key.includes('REPLACE')) {
@@ -121,14 +160,22 @@ async function main() {
     envValues[spec.envKey] = await ensurePrice(stripe, spec, productIds[spec.product]);
   }
 
+  Object.assign(envValues, await ensureWebhook(stripe));
+  const revenueCatAuth = process.env.REVENUECAT_WEBHOOK_AUTH ?? '';
+  if (
+    process.env.ROTATE_REVENUECAT_WEBHOOK_AUTH === '1' ||
+    !revenueCatAuth ||
+    /replace|change|example|your|todo/i.test(revenueCatAuth)
+  ) {
+    envValues.REVENUECAT_WEBHOOK_AUTH = `Bearer ${randomBytes(32).toString('hex')}`;
+    console.log('  + RevenueCat webhook authorization generated');
+  }
+
   writeEnv(envValues);
-  console.log(`\n✓ Wrote ${Object.keys(envValues).length} price ids to .env.local.`);
+  console.log(`\n✓ Wrote billing ids and secrets to .env.local.`);
   console.log('\nNext:');
   console.log('  1. Copy the STRIPE_PRICE_* lines into your Vercel project env.');
-  console.log('  2. Set up the webhook → STRIPE_WEBHOOK_SECRET:');
-  console.log('       local:  stripe listen --forward-to localhost:8083/api/webhooks/stripe');
-  console.log('       prod:   add endpoint https://reiseiapp.com/api/webhooks/stripe');
-  console.log('       events: checkout.session.completed, customer.subscription.updated, customer.subscription.deleted');
+  console.log('  2. Copy STRIPE_WEBHOOK_SECRET and REVENUECAT_WEBHOOK_AUTH into the production server env.');
   await Promise.resolve();
 }
 

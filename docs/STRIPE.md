@@ -24,10 +24,10 @@ Idempotently creates two products and four prices, then writes the ids into `.en
 
 | Env var | Plan | Price |
 |---|---|---|
-| `STRIPE_PRICE_PRO_MONTHLY` | Reisei Pro | $6.99 / mo |
-| `STRIPE_PRICE_PRO_ANNUAL` | Reisei Pro | $49.99 / yr |
-| `STRIPE_PRICE_SEAT_MONTHLY` | Crew Seat | $4.99 / seat / mo |
-| `STRIPE_PRICE_SEAT_ANNUAL` | Crew Seat | $49.99 / seat / yr |
+| `STRIPE_PRICE_PRO_MONTHLY` | Reisei Pro | $12.99 / mo |
+| `STRIPE_PRICE_PRO_ANNUAL` | Reisei Pro | $99 / yr |
+| `STRIPE_PRICE_SEAT_MONTHLY` | Reisei Crew | $24.99 / mo |
+| `STRIPE_PRICE_SEAT_ANNUAL` | Reisei Crew | $199 / yr |
 
 Pro carries a **7-day free trial** (applied at Checkout in `billing/checkout+api.ts`).
 Team seats bill by `quantity` (min 3 seats), no trial.
@@ -48,8 +48,9 @@ stripe listen --forward-to localhost:8083/api/webhooks/stripe
 # copy the printed whsec_… into STRIPE_WEBHOOK_SECRET
 ```
 
-**Production**: add an endpoint at `https://reiseiapp.com/api/webhooks/stripe`, copy its
-signing secret into the Vercel env as `STRIPE_WEBHOOK_SECRET`.
+**Production**: use `https://www.reiseiapp.com/api/webhooks/stripe`. The setup script
+creates or updates the endpoint and stores its signing secret locally; copy that value
+into the Vercel production env as `STRIPE_WEBHOOK_SECRET`.
 
 ## 4. Test the flow
 

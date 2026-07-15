@@ -32,7 +32,7 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="crew"
-        options={{ title: 'CORNER', tabBarIcon: ({ focused }) => <TabGlyph glyph="●" focused={focused} /> }}
+        options={{ title: 'CREW', tabBarIcon: ({ focused }) => <TabGlyph glyph="●" focused={focused} /> }}
       />
       <Tabs.Screen
         name="log"

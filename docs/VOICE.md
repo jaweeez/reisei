@@ -39,20 +39,20 @@ Every mechanic is one real practice wearing a discipline costume. The costume is
 | Grounding, breathing | **Reset** (60s to get back in your body) | somatic regulation when it spikes |
 | Perspective, values | **The Bearing** (a daily principle from a tradition you pick) | meaning, distance from the noise |
 | Coping-ahead | premeditation | deciding your move before the moment |
-| Social support | **your Corner** (people who actually know how you're doing) | not doing it alone, no performing |
+| Social support | **your Crew** (people who actually know how you're doing) | not doing it alone, no performing |
 | Incremental change | kaizen, raise the bar | 1% sharper |
 
 ## Three levers (why it lands on this audience)
 
 1. **Identity before behavior.** They won't "work on their mental health", but they'll "hold a line", an identity they want. Once they're someone who holds the line, getting present or naming a feeling is congruent with that identity, not a betrayal of it.
-2. **Status makes honesty safe.** The RESPECT ack (for an honest miss) makes vulnerability high-status inside the Corner, the one thing a therapist can't manufacture. Protect this mechanic, it's load-bearing.
-3. **Pointed at the self.** The Corner keeps you honest when no one's watching. It's a witness, not a scoreboard against friends.
+2. **Status makes honesty safe.** The RESPECT ack (for an honest miss) makes vulnerability high-status inside the Crew, the one thing a therapist can't manufacture. Protect this mechanic, it's load-bearing.
+3. **Pointed at the self.** The Crew keeps you honest when no one's watching. It's a witness, not a scoreboard against friends.
 
 ## The kaizen escalation ladder
 
 Earn the right to introduce each practice. Never front-load the emotional work, let the discipline carry them in.
 
-- **Weeks 1 to 2. Hook.** One line, check in daily, your Corner sees it. Reads as pure discipline.
+- **Weeks 1 to 2. Hook.** One line, check in daily, your Crew sees it. Reads as pure discipline.
 - **Weeks 3 to 4. Reset.** The coach offers a Reset on hard days. Get out of your head, back in your body. *(shipped)*
 - **Month 2. The Bearing.** A daily principle from a tradition you pick, aimed at what's actually coming up. *(shipped)*
 - **Month 2 and on. The log.** Put words to it, private.

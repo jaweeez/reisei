@@ -14,14 +14,13 @@ const CLOSE_SLOP = { top: 14, bottom: 14, left: 12, right: 12 };
 
 // Only shipped features. Unshipped promises are an App Store metadata risk.
 const PRO_FEATURES = [
-  'Create and captain a Corner',
-  'The Ledger: your full history',
-  'Keep your full log archive',
-  'Follow as many schools as you want',
+  'Full Pro for you and two invited people',
+  'One private Crew with weekly reviews',
+  '14-day Line Reviews and Cycle Reports',
+  'Full Ledger, Log, and personalized Bearings',
+  'No ads and no sale of personal data',
 ];
 
-const CORNER_MIN = 2;
-const CORNER_MAX_SEATS = 8;
 const ORG_MIN = 9;
 
 function Stepper({
@@ -71,7 +70,6 @@ export default function Paywall() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [restored, setRestored] = useState(false);
-  const [cornerSeats, setCornerSeats] = useState(3);
   const [orgSeats, setOrgSeats] = useState(ORG_MIN);
   const [orgName, setOrgName] = useState('');
   const [orgAvailable, setOrgAvailable] = useState(false);
@@ -89,12 +87,16 @@ export default function Paywall() {
     setError(null);
     try {
       if (iapEnabled()) {
-        // Mobile rail: RevenueCat / StoreKit / Play Billing.
+        // Mobile rail: RevenueCat fetches the current offering and completes
+        // the StoreKit / Play Billing transaction. A dashboard Paywall is not
+        // required; Reisei owns these two purchase choices.
         const pkgs = await getProPackages();
         const pkg = pkgs.find((p) => p.interval === interval) ?? pkgs[0];
         if (pkg && (await purchase(pkg)) === 'purchased') {
           await refresh();
           router.back();
+        } else if (!pkg) {
+          setError('Subscriptions are still being set up. Please try again soon.');
         }
       } else {
         // Web rail: Stripe Checkout.
@@ -118,7 +120,7 @@ export default function Paywall() {
     setBusy(interval === 'annual' ? 'seat-annual' : 'seat');
     setError(null);
     try {
-      const res = await billingApi.checkout('seat', interval, cornerSeats);
+      const res = await billingApi.checkout('seat', interval, 1);
       if (res.data.url) void Linking.openURL(res.data.url);
       else setError(res.data.error || 'Could not start checkout. Try again.');
     } catch {
@@ -192,12 +194,12 @@ export default function Paywall() {
       <View style={styles.head}>
         <VialMark width={140} />
         <Title style={{ marginTop: space.lg }}>Stay level, together</Title>
-        <Caption center>Every seat in a Corner is a paid seat.</Caption>
+        <Caption center>Private accountability. Everyone covered gets the complete member experience.</Caption>
       </View>
 
       <Card>
         <Eyebrow>Reisei Pro</Eyebrow>
-        <Text variant="display" color={color.textPrimary}>$6.99<Text variant="mono" color={color.textBody}> /mo</Text></Text>
+        <Text variant="display" color={color.textPrimary}>$12.99<Text variant="mono" color={color.textBody}> /mo</Text></Text>
         <View style={styles.featureList}>
           {PRO_FEATURES.map((f) => (
             <View key={f} style={styles.featureRow}>
@@ -213,7 +215,7 @@ export default function Paywall() {
           disabled={busy !== null && busy !== 'pro-monthly'}
         />
         <Button
-          label="Go Pro · Annual · $49.99/yr"
+          label="Go Pro · Annual · $99/yr"
           variant="secondary"
           onPress={() => buyPro('annual')}
           loading={busy === 'pro-annual'}
@@ -223,37 +225,30 @@ export default function Paywall() {
       </Card>
 
       <Card>
-        <Eyebrow>Corner</Eyebrow>
-        <Text variant="display" color={color.textPrimary}>$4.99<Text variant="mono" color={color.textBody}> /seat/mo</Text></Text>
-        <Body>Your Corner runs on seats. Two to eight: you cover your people, everyone seated gets Pro.</Body>
-        <Stepper
-          value={cornerSeats}
-          min={CORNER_MIN}
-          max={CORNER_MAX_SEATS}
-          onChange={setCornerSeats}
-          disabled={busy !== null}
-        />
+        <Eyebrow>Crew</Eyebrow>
+        <Text variant="display" color={color.textPrimary}>$24.99<Text variant="mono" color={color.textBody}> /mo</Text></Text>
+        <Body>One focused Crew for up to eight people. Everyone gets the complete member experience.</Body>
         <Button
-          label={`Buy ${cornerSeats} seats`}
+          label="Start a Crew"
           onPress={() => buySeats('monthly')}
           loading={busy === 'seat'}
           disabled={busy !== null && busy !== 'seat'}
         />
         <Button
-          label={`Annual · $49.99/seat/yr`}
+          label="Annual · $199/yr"
           variant="secondary"
           onPress={() => buySeats('annual')}
           loading={busy === 'seat-annual'}
           disabled={busy !== null && busy !== 'seat-annual'}
         />
-        {Platform.OS !== 'web' && <Caption>Seats are managed on reiseiapp.com.</Caption>}
+        {Platform.OS !== 'web' && <Caption>Crew plans are managed on reiseiapp.com.</Caption>}
       </Card>
 
       {orgAvailable && (
         <Card>
           <Eyebrow>Organization</Eyebrow>
           <Text variant="display" color={color.textPrimary}>$3.99<Text variant="mono" color={color.textBody}> /seat/mo</Text></Text>
-          <Body>Nine or more. A church, a gym, a team: several Corners under one roof. You place people and manage every group. Seats get Pro.</Body>
+          <Body>Nine or more. Several Crews under one roof. You place people and manage every group without seeing private member work.</Body>
           <Input
             inCard
             placeholder="Organization name"

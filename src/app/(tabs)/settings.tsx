@@ -1,217 +1,166 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
-import { Body, Button, Caption, Card, Chip, CrisisCard, Eyebrow, Input, Mono, Screen, Title } from '@/components';
+import {
+  Body,
+  Button,
+  Caption,
+  Chip,
+  CrisisCard,
+  HeroPanel,
+  InlineNotice,
+  Input,
+  ListRow,
+  Mono,
+  PageHeader,
+  Screen,
+  Section,
+} from '@/components';
 import { confirm } from '@/lib/alerts';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { billingApi } from '@/lib/billing/client';
-import { iapEnabled, restore } from '@/lib/billing/iap';
+import { iapEnabled, presentCustomerCenter, restore } from '@/lib/billing/iap';
 import { setHoldTime } from '@/lib/data/client';
 import { color, space } from '@/theme';
 
-const TIER_LABEL: Record<string, string> = { free: 'Free', pro: 'Reisei Pro', team: 'Corner seat', org: 'Organization' };
+const TIER_LABEL: Record<string, string> = { free: 'Free', pro: 'Reisei Pro', team: 'Covered member', org: 'Organization' };
 const HOLD_TIMES = ['18:00', '20:00', '22:00'];
 
 export default function Settings() {
   const { user, entitlement, logout, refresh, deleteAccount } = useAuth();
   const [portalAvailable, setPortalAvailable] = useState(false);
   const [hold, setHold] = useState(user?.holdTime ?? '20:00');
-  const [holdBusy, setHoldBusy] = useState(false);
-  const [portalBusy, setPortalBusy] = useState(false);
-  const [restoreBusy, setRestoreBusy] = useState(false);
-  const [logoutBusy, setLogoutBusy] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [billingError, setBillingError] = useState<string | null>(null);
   const [delOpen, setDelOpen] = useState(false);
   const [delPin, setDelPin] = useState('');
-  const [delBusy, setDelBusy] = useState(false);
   const [delErr, setDelErr] = useState<string | null>(null);
 
-  useEffect(() => {
-    void billingApi.status().then((r) => setPortalAvailable(Boolean(r.data.portalAvailable)));
-  }, []);
-  useEffect(() => {
-    if (user?.holdTime) setHold(user.holdTime);
-  }, [user?.holdTime]);
+  useEffect(() => { void billingApi.status().then((r) => setPortalAvailable(Boolean(r.data.portalAvailable))); }, []);
 
   async function openPortal() {
-    setPortalBusy(true);
+    setBusy('portal');
     try {
       const res = await billingApi.portal();
       if (res.data.url) void Linking.openURL(res.data.url);
-    } finally {
-      setPortalBusy(false);
-    }
+    } finally { setBusy(null); }
   }
 
   async function onRestore() {
-    setRestoreBusy(true);
+    setBusy('restore');
+    setBillingError(null);
     try {
-      await restore();
-    } finally {
-      setRestoreBusy(false);
-    }
+      if (await restore()) await refresh();
+      else setBillingError('No Reisei Pro purchase was found for this store account.');
+    } finally { setBusy(null); }
   }
 
-  async function onLogout() {
-    setLogoutBusy(true);
+  async function openCustomerCenter() {
+    setBusy('customer-center');
+    setBillingError(null);
     try {
-      await logout();
-    } finally {
-      setLogoutBusy(false);
-    }
+      if (!(await presentCustomerCenter())) setBillingError('Subscription management is unavailable right now. Try restoring purchases or use your store account.');
+    } finally { setBusy(null); }
   }
 
-  async function pickHold(t: string) {
-    setHold(t);
-    setHoldBusy(true);
-    try {
-      await setHoldTime(t);
-      await refresh();
-    } finally {
-      setHoldBusy(false);
-    }
+  async function pickHold(time: string) {
+    setHold(time);
+    setBusy('hold');
+    try { await setHoldTime(time); await refresh(); } finally { setBusy(null); }
   }
 
   async function onDelete() {
     if (!(await confirm('Delete account?', 'Delete your account permanently? This erases everything and cannot be undone.', 'Delete'))) return;
-    setDelBusy(true);
+    setBusy('delete');
     setDelErr(null);
     const err = await deleteAccount(delPin);
-    setDelBusy(false);
-    // On success the provider flips to guest and (tabs)/_layout redirects to /landing.
+    setBusy(null);
     if (err) setDelErr(err);
   }
 
   return (
     <Screen>
-      <Title>You</Title>
+      <PageHeader title="You" context={`@${user?.username ?? ''}`} />
 
-      <Card>
-        <Eyebrow>Account</Eyebrow>
+      <HeroPanel>
         <Body color={color.textPrimary}>{user?.name}</Body>
-        <Mono>{`@${user?.username ?? ''} · ${user?.tz ?? 'UTC'}`}</Mono>
-      </Card>
+        <Mono>{`${TIER_LABEL[entitlement?.tier ?? 'free']} · ${user?.tz ?? 'UTC'}`}</Mono>
+        {entitlement?.coverage ? <Caption>{`${entitlement.coverage.used} of ${entitlement.coverage.total} invited people covered.`}</Caption> : null}
+        {entitlement?.coveredByPro ? <Caption>Your Pro access is covered by your Crew captain.</Caption> : null}
+      </HeroPanel>
 
-      <Card>
-        <Eyebrow>Email</Eyebrow>
-        {user?.email ? (
-          <>
-            <Body color={color.textPrimary}>{user.email}</Body>
-            <Mono>{user.emailVerified ? 'Verified' : 'Unverified'}</Mono>
-            {user.emailVerified ? (
-              <Button label="Change email" variant="ghost" onPress={() => router.push({ pathname: '/verify-email', params: { change: '1' } })} />
-            ) : (
-              <Button label="Verify email" variant="secondary" onPress={() => router.push('/verify-email')} />
-            )}
-          </>
-        ) : (
-          <>
-            <Caption>Add an email so you can recover your account if you forget your PIN.</Caption>
-            <Button label="Add email" variant="secondary" onPress={() => router.push('/verify-email')} />
-          </>
-        )}
-      </Card>
+      <Section label="Profile">
+        <ListRow
+          title={user?.email ?? 'Add recovery email'}
+          detail={user?.email ? (user.emailVerified ? 'Verified recovery email' : 'Email not verified') : 'Recover your account if you forget your PIN'}
+          trailing={<Mono>OPEN</Mono>}
+          onPress={() => router.push({ pathname: '/verify-email', params: user?.email ? { change: '1' } : {} })}
+        />
+      </Section>
 
-      <Card>
-        <Eyebrow>Plan</Eyebrow>
-        <Body color={color.textPrimary}>{TIER_LABEL[entitlement?.tier ?? 'free']}</Body>
-        {entitlement?.tier === 'free' ? (
-          <Button label="Go Pro" onPress={() => router.push('/paywall')} />
-        ) : (
-          <View style={styles.stack}>
-            {portalAvailable && <Button label="Manage billing" variant="secondary" onPress={openPortal} loading={portalBusy} />}
-            {iapEnabled() && <Button label="Restore purchases" variant="ghost" onPress={onRestore} loading={restoreBusy} />}
-          </View>
-        )}
-      </Card>
+      <Section label="Plan and billing">
+        <ListRow title={TIER_LABEL[entitlement?.tier ?? 'free']} detail={entitlement?.tier === 'pro' ? 'You plus two invited people' : undefined} />
+        {entitlement?.tier === 'free' ? <Button label="Go Pro" onPress={() => router.push('/paywall')} /> : null}
+        {portalAvailable ? <Button label="Manage web billing" variant="secondary" onPress={openPortal} loading={busy === 'portal'} /> : null}
+        {iapEnabled() ? <Button label="Manage mobile subscription" variant="secondary" onPress={openCustomerCenter} loading={busy === 'customer-center'} /> : null}
+        {iapEnabled() ? <Button label="Restore purchases" variant="ghost" onPress={onRestore} loading={busy === 'restore'} /> : null}
+        {billingError ? <Caption color={color.actionText}>{billingError}</Caption> : null}
+        {(entitlement?.tier === 'org' || entitlement?.ownsOrg) ? (
+          <ListRow title="Organization" detail="Groups, seats, and invites" trailing={<Mono>OPEN</Mono>} onPress={() => router.push('/org')} />
+        ) : null}
+      </Section>
 
-      {/* ownsOrg keeps this reachable after a lapse — the dashboard carries the renew path. */}
-      {(entitlement?.tier === 'org' || entitlement?.ownsOrg) && (
-        <Card>
-          <Eyebrow>Organization</Eyebrow>
-          <Caption>Your groups, seats, and invites in one place.</Caption>
-          <Button label="Open your organization" variant="secondary" onPress={() => router.push('/org')} />
-        </Card>
-      )}
-
-      <Card>
-        <Eyebrow>Coach</Eyebrow>
-        <Caption>When to nudge you if the line's still open. The coach stays quiet on a held day.</Caption>
+      <Section label="Coach and reminders">
+        <Caption>When to nudge you if the Line is still open. The coach stays quiet on a held day.</Caption>
         <View style={styles.chips}>
-          {HOLD_TIMES.map((t) => (
-            <Chip key={t} label={t} active={hold === t} onPress={() => void pickHold(t)} disabled={holdBusy} style={{ flex: 1 }} />
+          {HOLD_TIMES.map((time) => (
+            <Chip key={time} label={time} active={hold === time} onPress={() => pickHold(time)} disabled={busy === 'hold'} style={styles.grow} />
           ))}
         </View>
-      </Card>
+        <ListRow title="The Bearing" detail="Schools and daily principles" trailing={<Mono>OPEN</Mono>} onPress={() => router.push('/bearing')} />
+        <ListRow title="The Ledger" detail="Cycles, history, and private reports" trailing={<Mono>OPEN</Mono>} onPress={() => router.push('/ledger')} />
+      </Section>
 
-      <Card>
-        <Eyebrow>The Bearing</Eyebrow>
-        <Caption>A daily principle to steer by, from the schools you follow. Perspective when your head gets loud.</Caption>
-        <Button label="Set your bearing" variant="secondary" onPress={() => router.push('/bearing')} />
-      </Card>
+      <Section label="Privacy and safety">
+        <InlineNotice label="Crew privacy" body="Your Crew sees your Line and posture. Your Log, notes, Bearings, recovery details, and review answers stay private." />
+        <CrisisCard />
+        <Pressable onPress={() => router.push('/privacy')} hitSlop={8} accessibilityRole="link" style={styles.legal}><Mono>Privacy policy</Mono></Pressable>
+      </Section>
 
-      <Card>
-        <Eyebrow>Ledger</Eyebrow>
-        <Caption>The shape of your composure: hold calendar, hold-rate, where the hard days land.</Caption>
-        <Button label="Open the Ledger" variant="secondary" onPress={() => router.push('/ledger')} />
-      </Card>
+      {entitlement?.isAdmin ? (
+        <Section label="Administration">
+          <ListRow title="Platform admin" detail="Users, Crews, and Pro grants" trailing={<Mono>OPEN</Mono>} onPress={() => router.push('/admin')} />
+        </Section>
+      ) : null}
 
-      <CrisisCard />
-
-      {entitlement?.isAdmin && (
-        <Card>
-          <Eyebrow>Admin</Eyebrow>
-          <Caption>Platform oversight: every user and Corner, and grant/revoke Pro.</Caption>
-          <Button label="Open Admin" variant="secondary" onPress={() => router.push('/admin')} />
-        </Card>
-      )}
-
-      <Card>
-        <Eyebrow>Session</Eyebrow>
-        <Button label="Log out" variant="secondary" onPress={onLogout} loading={logoutBusy} />
-      </Card>
-
-      <Card>
-        <Eyebrow>Delete account</Eyebrow>
-        <Caption>Delete your account and everything in it: your line, streak, log, and Corner standing. This cannot be undone.</Caption>
+      <Section label="Account">
+        <Button
+          label="Log out"
+          variant="secondary"
+          loading={busy === 'logout'}
+          onPress={async () => { setBusy('logout'); await logout(); setBusy(null); }}
+        />
         {!delOpen ? (
-          <Button label="Delete" variant="ghost" onPress={() => setDelOpen(true)} />
+          <Button label="Delete account" variant="ghost" onPress={() => setDelOpen(true)} />
         ) : (
-          <>
-            <Input
-              inCard
-              placeholder="Enter your PIN to confirm"
-              value={delPin}
-              onChangeText={setDelPin}
-              keyboardType="number-pad"
-              secureTextEntry
-              maxLength={8}
-            />
-            {delErr && <Body color={color.actionText}>{delErr}</Body>}
-            <Button label="Delete permanently" variant="secondary" onPress={onDelete} loading={delBusy} disabled={delPin.length < 4} />
-            <Button
-              label="Cancel"
-              variant="ghost"
-              onPress={() => {
-                setDelOpen(false);
-                setDelPin('');
-                setDelErr(null);
-              }}
-            />
-          </>
+          <View style={styles.delete}>
+            <Caption>Delete your Line, Ledger, Log, Crew standing, and account permanently.</Caption>
+            <Input placeholder="Enter your PIN to confirm" value={delPin} onChangeText={setDelPin} keyboardType="number-pad" secureTextEntry maxLength={8} />
+            {delErr ? <Body color={color.actionText}>{delErr}</Body> : null}
+            <Button label="Delete permanently" variant="secondary" onPress={onDelete} loading={busy === 'delete'} disabled={delPin.length < 4} />
+            <Button label="Cancel" variant="ghost" onPress={() => { setDelOpen(false); setDelPin(''); setDelErr(null); }} />
+          </View>
         )}
-      </Card>
+      </Section>
 
-      <Pressable onPress={() => router.push('/privacy')} hitSlop={8} accessibilityRole="link" style={styles.legal}>
-        <Mono>Privacy policy</Mono>
-      </Pressable>
-
-      <Caption center>Reisei · Mu Works LLC</Caption>
+      <Caption center>Reisei 1.5 · Mu Works LLC</Caption>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  stack: { gap: 12 },
-  legal: { alignItems: 'center', paddingVertical: space.sm },
   chips: { flexDirection: 'row', gap: space.sm },
+  grow: { flex: 1 },
+  legal: { alignItems: 'center', paddingVertical: space.sm },
+  delete: { gap: space.md },
 });

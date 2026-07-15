@@ -1,6 +1,6 @@
 import { Redirect, useFocusEffect } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Body, Button, Caption, Card, Eyebrow, Input, Mono, Screen, ScreenHeader, Text } from '@/components';
 import { confirm } from '@/lib/alerts';
 import { useAuth } from '@/lib/auth/AuthProvider';
@@ -19,7 +19,9 @@ export default function Admin() {
   // Latest query lives in a ref so `load` keeps a stable identity: useFocusEffect fetches
   // once per focus instead of refetching on every keystroke. Requery via Search / submit.
   const qRef = useRef(q);
-  qRef.current = q;
+  useEffect(() => {
+    qRef.current = q;
+  }, [q]);
 
   const loadUsers = useCallback(async (query: string) => setUsers(await adminUsers(query)), []);
   const load = useCallback(async () => {
@@ -57,7 +59,7 @@ export default function Admin() {
         <Eyebrow>Platform</Eyebrow>
         {overview ? (
           <>
-            <Mono>{`USERS ${overview.users}  ·  PRO ${overview.pro}  ·  ADMINS ${overview.admins}  ·  CORNERS ${overview.crews}`}</Mono>
+            <Mono>{`USERS ${overview.users}  ·  PRO ${overview.pro}  ·  ADMINS ${overview.admins}  ·  CREWS ${overview.crews}`}</Mono>
             <Mono>{`ACTIVE 7d ${overview.active7d}  ·  NEW 7d ${overview.signups7d}  ·  CHECK-INS TODAY ${overview.checkinsToday}`}</Mono>
           </>
         ) : (
@@ -88,7 +90,7 @@ export default function Admin() {
           <View key={u.id} style={styles.row}>
             <View style={styles.rowMain}>
               <Body color={color.textPrimary}>{u.name}</Body>
-              <Mono>{`@${u.username}${u.isAdmin ? ' · ADMIN' : ''} · ${u.plan.toUpperCase()} · ${u.crewCount} corners · ${u.createdAt}`}</Mono>
+              <Mono>{`@${u.username}${u.isAdmin ? ' · ADMIN' : ''} · ${u.plan.toUpperCase()} · ${u.crewCount} crews · ${u.createdAt}`}</Mono>
             </View>
             {/* Shared <Chip> can't host the in-flight spinner (label-only), so this is the
                 sanctioned minimal wrapper: Chip's visual language, minHeight 44, named a11y. */}

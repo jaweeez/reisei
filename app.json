@@ -3,8 +3,7 @@
     "name": "Reisei",
     "description": "Stay level. Daily check-ins, streaks, and a crew that expects you to show up.",
     "slug": "reisei",
-    "version": "0.1.0",
-    "orientation": "portrait",
+    "version": "1.5.0",
     "scheme": "reisei",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#1B1918",
@@ -18,8 +17,6 @@
     },
     "android": {
       "package": "com.muworks.reisei",
-      "versionCode": 1,
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "adaptiveIcon": {
         "foregroundImage": "./assets/brand/icon-adaptive.png",
@@ -48,6 +45,15 @@
         "expo-notifications",
         {
           "color": "#B8863E"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
         }
       ]
     ],
