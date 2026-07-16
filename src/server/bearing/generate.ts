@@ -3,13 +3,18 @@ import { anthropic, CHAT_MODEL, chatEnabled } from '@/server/ai/anthropic';
 import { searchTeachings } from '@/server/ai/vector';
 import type { BearingSource } from '@/lib/data/types';
 import { type BearingQuote, getSchool, quoteForToday, stateForToday, themeForToday } from './schools';
-import { BEARING_SYSTEM, buildBearingPrompt, deDash, parseBearingText, pickSource, splitTeachingContent } from './compose';
+import { registerDirective } from '@/server/ai/voice';
+import { BEARING_SYSTEM, RECOVERY_BEARING_SYSTEM, buildBearingPrompt, buildRecoveryBearingPrompt, deDash, parseBearingText, pickSource, splitTeachingContent } from './compose';
 
 /** Optional per-user steer: build the read around a specific quote + felt-state instead of the
  *  shared date rotation. Omitted ⇒ generateBearing behaves exactly as the neutral daily path. */
 export interface BearingSteer {
   quote?: BearingQuote | null;
   state?: string;
+  /** The reader's live struggle embedding: biases corpus retrieval toward what is actually up. */
+  queryVec?: number[];
+  /** How to address the reader ('default' | 'neutral'). Appends a directive to the system prompt. */
+  register?: string;
 }
 
 // Generate "the bearing" for a school on a given local date: retrieve grounding from the
@@ -39,7 +44,7 @@ export async function generateBearing(ideology: string, localDate: string, steer
   // `null` is intentional: the reader has exhausted this school's displayed quote set, so
   // generate a source-grounded Bearing without repeating one of those quotes.
   const quote = steer && 'quote' in steer ? steer.quote ?? null : quoteForToday(school, localDate);
-  const retrieved = await searchTeachings(`${theme} ${state}`.trim() || school.label, ideology, 5);
+  const retrieved = await searchTeachings(`${theme} ${state}`.trim() || school.label, ideology, 5, steer?.queryVec);
   // Prefer the day's quote as the link-out (its exact passage); else the school's canonical source.
   const source = quote ? { url: quote.url, title: quote.ref, attribution: school.source.attribution } : pickSource(retrieved, school);
   const viewQuote = quote ? { text: quote.text, ref: quote.ref } : null;
@@ -53,11 +58,14 @@ export async function generateBearing(ideology: string, localDate: string, steer
 
   if (!chatEnabled()) return fallback();
 
+  // Recovery schools have no quote and use a non-punitive recovery register (RECOVERY_EXPANSION.md).
+  const isRecovery = school.family === 'recovery';
+
   try {
     const { text } = await generateText({
       model: anthropic(CHAT_MODEL),
-      system: BEARING_SYSTEM,
-      prompt: buildBearingPrompt(school, quote, state, retrieved),
+      system: (isRecovery ? RECOVERY_BEARING_SYSTEM : BEARING_SYSTEM) + registerDirective(steer?.register),
+      prompt: isRecovery ? buildRecoveryBearingPrompt(school, state, retrieved) : buildBearingPrompt(school, quote, state, retrieved),
       maxTokens: 240,
       temperature: 0.7,
     });

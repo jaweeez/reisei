@@ -30,7 +30,7 @@ export type Interval = 'monthly' | 'annual';
 export function parseInterval(v: unknown): Interval {
   return v === 'annual' ? 'annual' : 'monthly';
 }
-export type PlanKey = 'pro' | 'seat' | 'org';
+export type PlanKey = 'pro' | 'seat' | 'org' | 'facility';
 
 export function priceRef(plan: PlanKey, interval: Interval): string {
   if (plan === 'pro') {
@@ -39,11 +39,15 @@ export function priceRef(plan: PlanKey, interval: Interval): string {
   if (plan === 'org') {
     return (interval === 'annual' ? process.env.STRIPE_PRICE_ORG_ANNUAL : process.env.STRIPE_PRICE_ORG_MONTHLY) || '';
   }
+  if (plan === 'facility') {
+    return (interval === 'annual' ? process.env.STRIPE_PRICE_FACILITY_ANNUAL : process.env.STRIPE_PRICE_FACILITY_MONTHLY) || '';
+  }
   return (interval === 'annual' ? process.env.STRIPE_PRICE_SEAT_ANNUAL : process.env.STRIPE_PRICE_SEAT_MONTHLY) || '';
 }
 export const proIntervals = (): Interval[] => (['monthly', 'annual'] as const).filter((i) => Boolean(priceRef('pro', i)));
 export const seatIntervals = (): Interval[] => (['monthly', 'annual'] as const).filter((i) => Boolean(priceRef('seat', i)));
 export const orgIntervals = (): Interval[] => (['monthly', 'annual'] as const).filter((i) => Boolean(priceRef('org', i)));
+export const facilityIntervals = (): Interval[] => (['monthly', 'annual'] as const).filter((i) => Boolean(priceRef('facility', i)));
 
 // Quantity rules, in one place. Pro and Crew are flat products. The webhook grants
 // the Crew product an eight-person pool. An Organization starts at 9 and has no product ceiling (999 is
@@ -52,6 +56,8 @@ export const SEAT_RULES: Record<PlanKey, { min: number; max: number }> = {
   pro: { min: 1, max: 1 },
   seat: { min: 1, max: 1 },
   org: { min: 9, max: 999 },
+  // A facility buys a block of client seats; starts at 5, no product ceiling (999 is Stripe's bound).
+  facility: { min: 5, max: 999 },
 };
 
 /** Clamp a requested seat count into the plan's rules. Non-numeric input → the minimum. */

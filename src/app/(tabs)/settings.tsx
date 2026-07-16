@@ -20,7 +20,7 @@ import { confirm } from '@/lib/alerts';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { billingApi } from '@/lib/billing/client';
 import { iapEnabled, presentCustomerCenter, restore } from '@/lib/billing/iap';
-import { setHoldTime } from '@/lib/data/client';
+import { claimFacilitySeat, fetchAddressRegister, setAddressRegister, setHoldTime } from '@/lib/data/client';
 import { color, space } from '@/theme';
 
 const TIER_LABEL: Record<string, string> = { free: 'Free', pro: 'Reisei Pro', team: 'Covered member', org: 'Organization' };
@@ -36,7 +36,34 @@ export default function Settings() {
   const [delPin, setDelPin] = useState('');
   const [delErr, setDelErr] = useState<string | null>(null);
 
+  const [register, setRegister] = useState('default');
+
   useEffect(() => { void billingApi.status().then((r) => setPortalAvailable(Boolean(r.data.portalAvailable))); }, []);
+  useEffect(() => { void fetchAddressRegister().then(setRegister); }, []);
+
+  async function pickRegister(next: string) {
+    if (next === register) return;
+    setBusy('register');
+    if (await setAddressRegister(next)) setRegister(next);
+    setBusy(null);
+  }
+
+  const [claimCode, setClaimCode] = useState('');
+  const [claimMsg, setClaimMsg] = useState<string | null>(null);
+  async function claimSeat() {
+    if (!claimCode.trim()) return;
+    setBusy('claim');
+    setClaimMsg(null);
+    const res = await claimFacilitySeat(claimCode.trim());
+    setBusy(null);
+    if (res.ok) {
+      setClaimCode('');
+      setClaimMsg('Seat claimed. You have full Pro now.');
+      await refresh();
+    } else {
+      setClaimMsg(res.error ?? 'Could not claim a seat.');
+    }
+  }
 
   async function openPortal() {
     setBusy('portal');
@@ -96,6 +123,11 @@ export default function Settings() {
           trailing={<Mono>OPEN</Mono>}
           onPress={() => router.push({ pathname: '/verify-email', params: user?.email ? { change: '1' } : {} })}
         />
+        <Caption>How Reisei speaks to you in daily reads.</Caption>
+        <View style={styles.chips}>
+          <Chip label="Standard" active={register === 'default'} onPress={() => pickRegister('default')} disabled={busy === 'register'} />
+          <Chip label="Neutral" active={register === 'neutral'} onPress={() => pickRegister('neutral')} disabled={busy === 'register'} />
+        </View>
       </Section>
 
       <Section label="Plan and billing">
@@ -108,6 +140,11 @@ export default function Settings() {
         {(entitlement?.tier === 'org' || entitlement?.ownsOrg) ? (
           <ListRow title="Organization" detail="Groups, seats, and invites" trailing={<Mono>OPEN</Mono>} onPress={() => router.push('/org')} />
         ) : null}
+        <ListRow title="Sponsor seats (facility)" detail="Fund private Pro for people you serve" trailing={<Mono>OPEN</Mono>} onPress={() => router.push('/facility')} />
+        <Caption>Have a facility code? Claim your sponsored seat.</Caption>
+        <Input inCard placeholder="Facility code" value={claimCode} onChangeText={setClaimCode} maxLength={16} />
+        <Button label="Claim seat" variant="secondary" loading={busy === 'claim'} disabled={!claimCode.trim()} onPress={claimSeat} />
+        {claimMsg ? <Caption color={color.actionText}>{claimMsg}</Caption> : null}
       </Section>
 
       <Section label="Coach and reminders">
@@ -123,6 +160,7 @@ export default function Settings() {
 
       <Section label="Privacy and safety">
         <InlineNotice label="Crew privacy" body="Your Crew sees your Line and posture. Your Log, notes, Bearings, recovery details, and review answers stay private." />
+        <ListRow title="Recovery mode" detail="Private sober-time count, begin again honestly" trailing={<Mono>OPEN</Mono>} onPress={() => router.push('/recovery-mode')} />
         <CrisisCard />
         <Pressable onPress={() => router.push('/privacy')} hitSlop={8} accessibilityRole="link" style={styles.legal}><Mono>Privacy policy</Mono></Pressable>
       </Section>

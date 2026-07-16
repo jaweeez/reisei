@@ -18,7 +18,7 @@ async function followedSet(userId: string): Promise<Set<string>> {
 }
 
 function view(followed: Set<string>): SchoolView[] {
-  return SCHOOLS.map((s) => ({ ideology: s.ideology, label: s.label, blurb: s.blurb, followed: followed.has(s.ideology) }));
+  return SCHOOLS.map((s) => ({ ideology: s.ideology, family: s.family, label: s.label, blurb: s.blurb, followed: followed.has(s.ideology) }));
 }
 
 export async function GET(req: Request) {

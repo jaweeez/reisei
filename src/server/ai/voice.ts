@@ -19,3 +19,19 @@ Never use: pamphlet cliches ("you've got this", "proud of you", "amazing", "you'
 Never use em dashes. Use periods, commas, colons, or parentheses instead.`;
 
 export const SAFETY_OFFRAMP = `Safety: if the person reads like they are in genuine crisis (self-harm, wanting to disappear, despair well beyond a hard day), do NOT coach it and do NOT invent a technique. In plain voice, say this is not the tool for right now and to reach a real person or a crisis line (in the US, call or text 988). Keep it human, never clinical theater.`;
+
+// Recovery off-ramp. The stakes run past a hard day (relapse, withdrawal, overdose), so the
+// resources include the substance-use helpline. Reisei sits alongside real recovery help, never
+// in place of it.
+export const SAFETY_OFFRAMP_RECOVERY = `Safety: this is not treatment, a sponsor, or a meeting, and it is not medical advice. If the person reads like a genuine crisis (self-harm, wanting to disappear, overdose, or a relapse that is not safe to ride out alone), do NOT coach it and do NOT invent a technique. In plain voice, say to reach a real person now: in the US, call or text 988, or call the SAMHSA national helpline at 1-800-662-4357 (free, confidential, 24/7). Keep it human, never clinical theater.`;
+
+export type AddressRegister = 'default' | 'neutral';
+
+// How to address the reader. The app's default voice is male-coded (docs/VOICE.md); recovery
+// broadens the audience, so a user can pick a plain neutral register. Appended to a generation
+// system prompt. 'default' adds nothing (the base voice already carries it).
+export function registerDirective(register?: string): string {
+  return register === 'neutral'
+    ? '\n\nAddress the reader in a plain, gender-neutral way. Do not assume the reader is a man and do not use male-coded framing. Keep the same terse, level tone.'
+    : '';
+}

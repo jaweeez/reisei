@@ -22,13 +22,19 @@ const CRISIS_PATTERNS: RegExp[] = [
   /\bno\s+(?:reason|point)\s+(?:to|in)\s+(?:living|go(?:ing)?\s+on)\b/i,
   /\bdon'?t\s+want\s+to\s+(?:be\s+here|live|exist)\b/i,
   /\bcan'?t\s+(?:do\s+this|go\s+on|keep\s+going)\s+anymore\b/i,
+  // Recovery crisis: intent to overdose or use in a way meant to end things. Ordinary cravings,
+  // urges, or a slip by itself must NOT trip this (they stay 'ok' and get coached).
+  /\bwant(?:ing)?\s+to\s+overdose\b/i,
+  /\b(?:take|use)\s+(?:the\s+)?(?:whole|entire|rest\s+of\s+the)\s+(?:bottle|batch|bag|stash|thing)\b/i,
+  /\bdon'?t\s+care\s+if\s+i\s+(?:overdose|od|die|wake\s+up|come\s+back)\b/i,
+  /\buse\s+until\s+i\s+(?:die|stop\s+breathing|don'?t\s+wake\s+up)\b/i,
 ];
 
 function keywordRisk(text: string): EntryRisk {
   return CRISIS_PATTERNS.some((re) => re.test(text)) ? 'dark' : 'ok';
 }
 
-const SYSTEM = `You are a safety classifier for a men's composure app. Read one private log entry and decide if the writer is in genuine crisis right now: suicidal thoughts, intent to harm themselves, wanting to disappear or not exist, or despair well beyond a hard day. Ordinary anger, stress, sadness, shame, grief, cravings, loneliness, or a plain bad day are NOT crisis. Answer with exactly one word: dark if it reads like genuine crisis, otherwise ok. Output nothing else.`;
+const SYSTEM = `You are a safety classifier for a men's composure and recovery app. Read one private log entry and decide if the writer is in genuine crisis right now: suicidal thoughts, intent to harm themselves, intent to overdose or use in a way meant to end things, wanting to disappear or not exist, or despair well beyond a hard day. Ordinary anger, stress, sadness, shame, grief, cravings or urges, a slip or relapse by itself, loneliness, or a plain bad day are NOT crisis. Answer with exactly one word: dark if it reads like genuine crisis, otherwise ok. Output nothing else.`;
 
 /** Classify one log entry. Explicit crisis language is trusted immediately; otherwise the model
  *  is asked (it catches subtler cases). Any model failure falls back to the keyword result. */

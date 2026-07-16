@@ -1,5 +1,5 @@
 {
-  "version": "2026-07-06",
+  "version": "2026-07-16b",
   "teachings": [
     {
       "id": "sto-control",
@@ -405,6 +405,186 @@
       "practice": "Name one thing worth doing even if no one notices. Do a piece of it today.",
       "source": "Existentialism — Stanford Encyclopedia of Philosophy",
       "url": "https://plato.stanford.edu/entries/existentialism/"
+    },
+    {
+      "id": "smart-urges",
+      "ideology": "smart-recovery",
+      "theme": "urges",
+      "title": "Ride the urge",
+      "teaching": "An urge is a wave. It builds, peaks, and passes on its own if you do not feed it. You do not have to fight it or obey it, just outlast it.",
+      "practice": "Time the next urge. Notice it rise, breathe, and watch it drop. Most peak and fade in under fifteen minutes.",
+      "source": "SMART Recovery, urge management"
+    },
+    {
+      "id": "smart-cba",
+      "ideology": "smart-recovery",
+      "theme": "motivation",
+      "title": "Cost and benefit, honestly",
+      "teaching": "Wanting to use and wanting to be well can both be true at once. Put both columns on paper so the quiet reasons get a vote, not just the loud craving.",
+      "practice": "Write two columns: what using gives you today, what it costs you tomorrow. Read the second column out loud.",
+      "source": "SMART Recovery, cost benefit analysis"
+    },
+    {
+      "id": "smart-abc",
+      "ideology": "smart-recovery",
+      "theme": "thoughts",
+      "title": "The belief in the middle",
+      "teaching": "The trigger does not make the urge. The belief you hang on it does. Find the thought between the trigger and the craving, and test whether it is fully true.",
+      "practice": "Name the trigger, then the thought it set off. Ask: is that the whole truth, or is that the craving talking.",
+      "source": "SMART Recovery, ABC method"
+    },
+    {
+      "id": "smart-balance",
+      "ideology": "smart-recovery",
+      "theme": "balance",
+      "title": "A life worth staying for",
+      "teaching": "Recovery is not only saying no. It is building enough of a life that the old thing has less room. One value acted on today beats a perfect plan on paper.",
+      "practice": "Pick one thing you value (your health, someone you love, your work). Do one small act for it in the next hour.",
+      "source": "SMART Recovery, lifestyle balance"
+    },
+    {
+      "id": "dharma-craving",
+      "ideology": "recovery-dharma",
+      "theme": "craving",
+      "title": "Meet the craving",
+      "teaching": "Craving is a signal to turn toward, not away. Watched with attention it loses its grip. Investigated with kindness it shows you what is underneath.",
+      "practice": "When the craving comes, name it plainly: this is craving. Feel where it sits in the body. Breathe with it for one minute.",
+      "source": "Recovery Dharma, mindfulness of craving"
+    },
+    {
+      "id": "dharma-impermanence",
+      "ideology": "recovery-dharma",
+      "theme": "impermanence",
+      "title": "This will pass",
+      "teaching": "Every state is weather, not climate. The urge that feels permanent right now will not be here by evening. You are the sky, not the storm moving through it.",
+      "practice": "Say to yourself: this feeling is real, and it is temporary. Then do one ordinary next thing.",
+      "source": "Recovery Dharma, impermanence"
+    },
+    {
+      "id": "dharma-investigate",
+      "ideology": "recovery-dharma",
+      "theme": "investigation",
+      "title": "Investigate with kindness",
+      "teaching": "Underneath most cravings is a feeling asking to be felt. Turn toward it with curiosity instead of judgment, and it stops running you from the dark.",
+      "practice": "Ask the urge one question: what am I actually needing right now. Sit with the answer without rushing to fix it.",
+      "source": "Recovery Dharma, inquiry"
+    },
+    {
+      "id": "dharma-compassion",
+      "ideology": "recovery-dharma",
+      "theme": "compassion",
+      "title": "Kindness toward yourself",
+      "teaching": "Shame keeps the cycle turning. Speaking to yourself the way you would to a friend in the same spot loosens it. You can be accountable and gentle at once.",
+      "practice": "Put a hand on your chest. Say one true, kind sentence to yourself, out loud if you can.",
+      "source": "Recovery Dharma, self compassion"
+    },
+    {
+      "id": "aa-one-day",
+      "ideology": "aa",
+      "theme": "one day at a time",
+      "title": "One day at a time",
+      "teaching": "Forever is too heavy to carry. You are not quitting for life today, you are staying with it for one day, or one hour. That is a load you can actually hold.",
+      "practice": "Shrink the window. Ask only: can I hold this for the next hour. Then do the hour.",
+      "source": "Alcoholics Anonymous, one day at a time"
+    },
+    {
+      "id": "aa-powerless",
+      "ideology": "aa",
+      "theme": "powerlessness",
+      "title": "Powerlessness is honesty",
+      "teaching": "Admitting you cannot white-knuckle this alone is not weakness, it is the honesty that lets help in. Control was the illusion. Asking is the strength.",
+      "practice": "Name one thing you have been trying to manage alone. Tell one trusted person about it today.",
+      "source": "Alcoholics Anonymous, first step"
+    },
+    {
+      "id": "aa-halt",
+      "ideology": "aa",
+      "theme": "honesty",
+      "title": "HALT before you act",
+      "teaching": "Hungry, angry, lonely, tired. Most urges get loud when one of these is unmet. The urge is often the messenger, not the message.",
+      "practice": "Run the HALT check. Whichever is true, meet that need first, then see if the urge is still there.",
+      "source": "Alcoholics Anonymous, HALT"
+    },
+    {
+      "id": "aa-reach-out",
+      "ideology": "aa",
+      "theme": "service",
+      "title": "Reach out before it gets loud",
+      "teaching": "The urge does its best work in isolation. A call before the first drink breaks the spell more reliably than willpower after it.",
+      "practice": "Text or call one person now, before you need to. You do not have to have a reason ready.",
+      "source": "Alcoholics Anonymous, fellowship"
+    },
+    {
+      "id": "na-just-today",
+      "ideology": "na",
+      "theme": "just for today",
+      "title": "Just for today",
+      "teaching": "You do not have to stay clean forever, just today. Tomorrow is not yours to carry yet. Enough todays strung together become the thing you were afraid to promise.",
+      "practice": "Commit to today only. Write today's date where you will see it, and let that be the whole goal.",
+      "source": "Narcotics Anonymous, just for today"
+    },
+    {
+      "id": "na-surrender",
+      "ideology": "na",
+      "theme": "surrender",
+      "title": "Stop wrestling it alone",
+      "teaching": "Surrender is not giving up, it is putting down a fight you keep losing so you can pick up one you can win. You were never meant to do this on grip alone.",
+      "practice": "Name the fight you keep losing by yourself. Bring it to one person or a meeting this week.",
+      "source": "Narcotics Anonymous, surrender"
+    },
+    {
+      "id": "na-connection",
+      "ideology": "na",
+      "theme": "connection",
+      "title": "You are not the only one",
+      "teaching": "The shame says you are uniquely broken. The rooms say otherwise. Being known by people who have been where you are takes the charge out of it.",
+      "practice": "Say one true thing to someone who gets it. Honesty out loud shrinks what secrecy grows.",
+      "source": "Narcotics Anonymous, identification"
+    },
+    {
+      "id": "na-play-forward",
+      "ideology": "na",
+      "theme": "staying clean",
+      "title": "Play the tape forward",
+      "teaching": "The craving only shows you the first hit, never the fifth or the morning after. Run the tape to the end and the fantasy loses its shine.",
+      "practice": "Picture the whole night, not just the first minute. Where does it actually end. Decide from there.",
+      "source": "Narcotics Anonymous, playing the tape"
+    },
+    {
+      "id": "sec-urge-surf",
+      "ideology": "secular-recovery",
+      "theme": "urges",
+      "title": "Surf the urge",
+      "teaching": "You do not have to make the urge leave, you only have to not act while it is here. Ride it like a wave and it passes. No higher power required, just time and attention.",
+      "practice": "Set a ten minute timer when the urge hits. Do one small thing until it rings, then reassess.",
+      "source": "Secular recovery, urge surfing"
+    },
+    {
+      "id": "sec-triggers",
+      "ideology": "secular-recovery",
+      "theme": "triggers",
+      "title": "Know your setups",
+      "teaching": "Relapse usually starts before the urge, in a person, place, or state that reliably sets you up. Name your setups and you can plan around them instead of being ambushed.",
+      "practice": "List your top three triggers. Pick one and write the move you will make next time it shows up.",
+      "source": "Secular recovery, trigger planning"
+    },
+    {
+      "id": "sec-reasons",
+      "ideology": "secular-recovery",
+      "theme": "reasons",
+      "title": "Keep your reasons close",
+      "teaching": "Motivation fades in the moment you need it most. Your reasons do not have to be noble, they have to be yours, and they have to be where you can see them.",
+      "practice": "Write your real reason on your lock screen or a card in your wallet. Read it when the urge comes.",
+      "source": "Secular recovery, values"
+    },
+    {
+      "id": "sec-routine",
+      "ideology": "secular-recovery",
+      "theme": "routine",
+      "title": "Build the boring scaffolding",
+      "teaching": "Sleep, food, movement, and a full day are not side issues, they are the structure that keeps you standing. Boring routine carries you when motivation will not.",
+      "practice": "Pick one anchor for tomorrow (a wake time, a walk, a meal). Set it now and keep it small.",
+      "source": "Secular recovery, routine"
     }
   ],
   "sources": [
@@ -694,6 +874,285 @@
       "title": "Twilight of the Idols",
       "url": "https://www.gutenberg.org/files/52263/52263-h/52263-h.htm",
       "theme": "choice",
+      "action": "extract"
+    },
+    {
+      "id": "ms-epictetus-discourses",
+      "ideology": "modern-stoicism",
+      "org": "Wikisource (public domain)",
+      "title": "The Discourses of Epictetus",
+      "url": "https://en.wikisource.org/wiki/The_Discourses_of_Epictetus",
+      "theme": "control",
+      "action": "extract"
+    },
+    {
+      "id": "ms-seneca-letters",
+      "ideology": "modern-stoicism",
+      "org": "Wikisource (public domain)",
+      "title": "Moral Letters to Lucilius",
+      "url": "https://en.wikisource.org/wiki/Moral_letters_to_Lucilius",
+      "theme": "reframing",
+      "action": "extract"
+    },
+    {
+      "id": "cbt-apa",
+      "ideology": "cbt",
+      "org": "American Psychological Association",
+      "title": "What Is Cognitive Behavioral Therapy?",
+      "url": "https://www.apa.org/ptsd-guideline/patients-and-families/cognitive-behavioral",
+      "theme": "reframing",
+      "action": "extract"
+    },
+    {
+      "id": "act-acbs-processes",
+      "ideology": "act",
+      "org": "Association for Contextual Behavioral Science",
+      "title": "The Six Core Processes of ACT",
+      "url": "https://contextualscience.org/the_six_core_processes_of_act",
+      "theme": "acceptance",
+      "action": "extract"
+    },
+    {
+      "id": "act-acbs-values",
+      "ideology": "act",
+      "org": "Association for Contextual Behavioral Science",
+      "title": "ACT — values and committed action",
+      "url": "https://contextualscience.org/act",
+      "theme": "values",
+      "action": "extract"
+    },
+    {
+      "id": "bud-suttacentral-mn",
+      "ideology": "buddhism",
+      "org": "SuttaCentral (CC0)",
+      "title": "Satipatthana Sutta (MN 10)",
+      "url": "https://suttacentral.net/mn10/en/sujato",
+      "theme": "present",
+      "action": "extract"
+    },
+    {
+      "id": "hin-gita-ch6",
+      "ideology": "hinduism",
+      "org": "Wisdom Library (public domain)",
+      "title": "Bhagavad Gita, Chapter 6",
+      "url": "https://www.wisdomlib.org/hinduism/book/the-bhagavadgita/d/doc81673.html",
+      "theme": "discipline",
+      "action": "extract"
+    },
+    {
+      "id": "chr-web-psalms",
+      "ideology": "christianity",
+      "org": "eBible (public domain WEB)",
+      "title": "World English Bible — Psalms",
+      "url": "https://ebible.org/web/PSA.htm",
+      "theme": "perseverance",
+      "action": "extract"
+    },
+    {
+      "id": "chr-web-proverbs",
+      "ideology": "christianity",
+      "org": "eBible (public domain WEB)",
+      "title": "World English Bible — Proverbs",
+      "url": "https://ebible.org/web/PRO.htm",
+      "theme": "humility",
+      "action": "extract"
+    },
+    {
+      "id": "isl-wikisource-ali",
+      "ideology": "islam",
+      "org": "Wikisource (public domain)",
+      "title": "The Holy Qur'an (Maulana Muhammad Ali)",
+      "url": "https://en.wikisource.org/wiki/The_Holy_Qur%27an_(Maulana_Muhammad_Ali)",
+      "theme": "patience",
+      "action": "extract"
+    },
+    {
+      "id": "exi-sep-entry",
+      "ideology": "existentialism",
+      "org": "Stanford Encyclopedia of Philosophy",
+      "title": "Existentialism (SEP)",
+      "url": "https://plato.stanford.edu/entries/existentialism/",
+      "theme": "freedom",
+      "action": "extract"
+    },
+    {
+      "id": "smart-toolbox",
+      "ideology": "smart-recovery",
+      "org": "SMART Recovery",
+      "title": "SMART Recovery Toolbox",
+      "url": "https://smartrecovery.org/smart-recovery-toolbox",
+      "theme": "urges",
+      "action": "extract"
+    },
+    {
+      "id": "smart-4point",
+      "ideology": "smart-recovery",
+      "org": "SMART Recovery",
+      "title": "The 4-Point Program",
+      "url": "https://smartrecovery.org/smart-recovery-toolbox/smart-recovery-4-point-program",
+      "theme": "motivation",
+      "action": "extract"
+    },
+    {
+      "id": "smart-about",
+      "ideology": "smart-recovery",
+      "org": "SMART Recovery",
+      "title": "About SMART Recovery",
+      "url": "https://smartrecovery.org/about-us",
+      "theme": "balance",
+      "action": "extract"
+    },
+    {
+      "id": "smart-urges",
+      "ideology": "smart-recovery",
+      "org": "SMART Recovery",
+      "title": "Coping with urges",
+      "url": "https://smartrecovery.org/blog/urge-surfing",
+      "theme": "triggers",
+      "action": "extract"
+    },
+    {
+      "id": "dharma-home",
+      "ideology": "recovery-dharma",
+      "org": "Recovery Dharma (Creative Commons)",
+      "title": "Recovery Dharma",
+      "url": "https://recoverydharma.org/",
+      "theme": "refuge",
+      "action": "extract"
+    },
+    {
+      "id": "dharma-book",
+      "ideology": "recovery-dharma",
+      "org": "Recovery Dharma (Creative Commons)",
+      "title": "The Recovery Dharma book",
+      "url": "https://recoverydharma.org/the-book",
+      "theme": "investigation",
+      "action": "extract"
+    },
+    {
+      "id": "dharma-meditations",
+      "ideology": "recovery-dharma",
+      "org": "Recovery Dharma (Creative Commons)",
+      "title": "Recovery Dharma meditations",
+      "url": "https://recoverydharma.org/meditations",
+      "theme": "present",
+      "action": "extract"
+    },
+    {
+      "id": "dharma-about",
+      "ideology": "recovery-dharma",
+      "org": "Recovery Dharma (Creative Commons)",
+      "title": "About Recovery Dharma",
+      "url": "https://recoverydharma.org/about",
+      "theme": "compassion",
+      "action": "extract"
+    },
+    {
+      "id": "aa-what-is",
+      "ideology": "aa",
+      "org": "Alcoholics Anonymous",
+      "title": "What is A.A.?",
+      "url": "https://www.aa.org/what-is-aa",
+      "theme": "honesty",
+      "action": "extract"
+    },
+    {
+      "id": "aa-faqs",
+      "ideology": "aa",
+      "org": "Alcoholics Anonymous",
+      "title": "FAQs about A.A.",
+      "url": "https://www.aa.org/faqs-about-aa",
+      "theme": "powerlessness",
+      "action": "extract"
+    },
+    {
+      "id": "aa-newcomers",
+      "ideology": "aa",
+      "org": "Alcoholics Anonymous",
+      "title": "For newcomers",
+      "url": "https://www.aa.org/newcomers",
+      "theme": "one day at a time",
+      "action": "extract"
+    },
+    {
+      "id": "aa-find-meeting",
+      "ideology": "aa",
+      "org": "Alcoholics Anonymous",
+      "title": "Find A.A. near you",
+      "url": "https://www.aa.org/find-aa",
+      "theme": "service",
+      "action": "extract"
+    },
+    {
+      "id": "na-about",
+      "ideology": "na",
+      "org": "Narcotics Anonymous",
+      "title": "About NA",
+      "url": "https://www.na.org/?ID=aboutus",
+      "theme": "connection",
+      "action": "extract"
+    },
+    {
+      "id": "na-newcomers",
+      "ideology": "na",
+      "org": "Narcotics Anonymous",
+      "title": "Information about NA",
+      "url": "https://www.na.org/?ID=ips-index",
+      "theme": "just for today",
+      "action": "extract"
+    },
+    {
+      "id": "na-pr",
+      "ideology": "na",
+      "org": "Narcotics Anonymous",
+      "title": "NA — public relations info",
+      "url": "https://www.na.org/?ID=PR-index",
+      "theme": "surrender",
+      "action": "extract"
+    },
+    {
+      "id": "na-meetings",
+      "ideology": "na",
+      "org": "Narcotics Anonymous",
+      "title": "Find an NA meeting",
+      "url": "https://www.na.org/meetingsearch/",
+      "theme": "staying clean",
+      "action": "extract"
+    },
+    {
+      "id": "sec-samhsa-helpline",
+      "ideology": "secular-recovery",
+      "org": "SAMHSA",
+      "title": "SAMHSA National Helpline",
+      "url": "https://www.samhsa.gov/find-help/national-helpline",
+      "theme": "reasons",
+      "action": "extract"
+    },
+    {
+      "id": "sec-samhsa-treatment",
+      "ideology": "secular-recovery",
+      "org": "SAMHSA",
+      "title": "Finding treatment",
+      "url": "https://www.samhsa.gov/find-treatment",
+      "theme": "routine",
+      "action": "extract"
+    },
+    {
+      "id": "sec-cdc-overdose",
+      "ideology": "secular-recovery",
+      "org": "CDC",
+      "title": "Overdose prevention",
+      "url": "https://www.cdc.gov/overdose-prevention/",
+      "theme": "triggers",
+      "action": "extract"
+    },
+    {
+      "id": "sec-lifering",
+      "ideology": "secular-recovery",
+      "org": "LifeRing Secular Recovery",
+      "title": "LifeRing Secular Recovery",
+      "url": "https://lifering.org/",
+      "theme": "honesty",
       "action": "extract"
     }
   ]

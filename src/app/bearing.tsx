@@ -2,9 +2,10 @@ import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Body, Button, Caption, Card, Chip, Eyebrow, Input, Mono, Screen, ScreenHeader, Text } from '@/components';
-import { fetchBearing, fetchBearingHistory, logBearing, setSchools } from '@/lib/data/client';
+import { Body, Button, Caption, Card, Chip, Eyebrow, InlineNotice, Input, Mono, Screen, ScreenHeader, Section, Text } from '@/components';
+import { acknowledgeRecoveryTerms, fetchBearing, fetchBearingHistory, logBearing, setSchools } from '@/lib/data/client';
 import type { BearingHistory, BearingResponse, BearingView } from '@/lib/data/types';
+import { FAMILY_LABEL, FAMILY_ORDER } from '@/data/corpus/types';
 import { color, space } from '@/theme';
 
 // The Bearing — a daily operating principle to steer by, from the schools you follow.
@@ -18,6 +19,7 @@ export default function Bearing() {
   const [loggingId, setLoggingId] = useState<string | null>(null);
   const [showLog, setShowLog] = useState(false);
   const [history, setHistory] = useState<BearingHistory | null>(null);
+  const [ackPending, setAckPending] = useState<string | null>(null);
 
   const load = useCallback(async () => setData(await fetchBearing()), []);
   useEffect(() => {
@@ -26,8 +28,15 @@ export default function Bearing() {
     return () => { active = false; };
   }, []);
 
-  async function toggle(ideology: string) {
+  async function toggle(ideology: string, skipAck = false) {
     if (!data) return;
+    // First time following a Recovery school: show the not-treatment acknowledgment once.
+    const school = data.schools.find((s) => s.ideology === ideology);
+    const turningOn = school && !school.followed;
+    if (!skipAck && turningOn && school?.family === 'recovery' && !data.recoveryAck) {
+      setAckPending(ideology);
+      return;
+    }
     const followed = data.schools.filter((s) => s.followed).map((s) => s.ideology);
     const next = followed.includes(ideology) ? followed.filter((x) => x !== ideology) : [...followed, ideology];
     setBusy(true);
@@ -39,6 +48,17 @@ export default function Bearing() {
     }
     await load(); // regenerate today's bearings for the new set
     setBusy(false);
+  }
+
+  async function confirmAck() {
+    setBusy(true);
+    const ok = await acknowledgeRecoveryTerms();
+    setBusy(false);
+    if (!ok) return;
+    const pending = ackPending;
+    setData((d) => (d ? { ...d, recoveryAck: true } : d));
+    setAckPending(null);
+    if (pending) await toggle(pending, true);
   }
 
   async function onLog(b: BearingView) {
@@ -72,18 +92,31 @@ export default function Bearing() {
   const followedCount = data.schools.filter((s) => s.followed).length;
 
   const picker = (
-    <Card>
-      <Eyebrow>Your schools</Eyebrow>
+    <View style={styles.picker}>
       {followedCount === 0 && (
         <Caption>Choose the schools you draw from. Each gives you one daily principle, grounded and sourced.</Caption>
       )}
-      <View style={styles.chips}>
-        {data.schools.map((s) => (
-          <Chip key={s.ideology} label={s.label} active={s.followed} onPress={() => toggle(s.ideology)} disabled={busy} />
-        ))}
-      </View>
+      {FAMILY_ORDER.map((family) => {
+        const inFamily = data.schools.filter((s) => s.family === family);
+        if (!inFamily.length) return null;
+        return (
+          <Section key={family} label={FAMILY_LABEL[family]}>
+            {family === 'recovery' && (
+              <InlineNotice
+                label="Not treatment"
+                body="Reisei is not treatment, a sponsor, or a meeting. It sits alongside them. In a crisis, reach a real person: call or text 988, or SAMHSA at 1-800-662-4357."
+              />
+            )}
+            <View style={styles.chips}>
+              {inFamily.map((s) => (
+                <Chip key={s.ideology} label={s.label} active={s.followed} onPress={() => toggle(s.ideology)} disabled={busy} />
+              ))}
+            </View>
+          </Section>
+        );
+      })}
       {followedCount > 0 && <Caption>Free follows up to 2 schools. Pro follows as many as you want.</Caption>}
-    </Card>
+    </View>
   );
 
   const todayCards = data.today.map((b) => (
@@ -137,6 +170,15 @@ export default function Bearing() {
       <ScreenHeader title="The Bearing" />
       <Caption>A principle to steer by, from the schools you follow. Direction, not mood.</Caption>
 
+      {ackPending && (
+        <Card>
+          <Eyebrow>Before you start</Eyebrow>
+          <Body color={color.textBody}>Reisei is not treatment, a sponsor, or a meeting. It sits alongside them. In a crisis, reach a real person: call or text 988, or SAMHSA at 1-800-662-4357.</Body>
+          <Button label="I understand" onPress={confirmAck} loading={busy} />
+          <Button label="Not now" variant="ghost" onPress={() => setAckPending(null)} />
+        </Card>
+      )}
+
       {/* Return visits lead with today's bearing; first-run leads with the picker. */}
       {followedCount > 0 ? (
         <>
@@ -182,6 +224,7 @@ export default function Bearing() {
 }
 
 const styles = StyleSheet.create({
+  picker: { gap: space.lg },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   quoteBlock: { gap: space.xs, paddingLeft: space.md, borderLeftWidth: 2, borderLeftColor: color.action },
   sourceRow: { paddingVertical: space.xs },

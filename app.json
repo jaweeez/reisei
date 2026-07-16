@@ -3,7 +3,7 @@
     "name": "Reisei",
     "description": "Stay level. Daily check-ins, streaks, and a crew that expects you to show up.",
     "slug": "reisei",
-    "version": "1.5.0",
+    "version": "2.0.0",
     "scheme": "reisei",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#1B1918",

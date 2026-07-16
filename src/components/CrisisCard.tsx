@@ -13,7 +13,11 @@ const RESOURCES: { label: string; sub: string; url: string }[] = [
   { label: 'Call 911', sub: 'If you or someone else is in danger right now.', url: 'tel:911' },
 ];
 
-export function CrisisCard({ alert = false }: { alert?: boolean }) {
+// Substance-use helpline, appended in recovery contexts (docs/RECOVERY_EXPANSION.md duty of care).
+const SAMHSA = { label: 'Call 1-800-662-4357', sub: 'SAMHSA National Helpline. Free, confidential, 24/7.', url: 'tel:18006624357' };
+
+export function CrisisCard({ alert = false, recovery = false }: { alert?: boolean; recovery?: boolean }) {
+  const resources = recovery ? [...RESOURCES, SAMHSA] : RESOURCES;
   return (
     <View style={[styles.card, alert && styles.alert]}>
       <Mono color={color.actionText}>{alert ? 'Read that back' : 'If you are in a real hole'}</Mono>
@@ -23,7 +27,7 @@ export function CrisisCard({ alert = false }: { alert?: boolean }) {
           : 'Some things are bigger than a log. If you are not okay, reach a person, not an app.'}
       </Body>
       <View style={styles.lines}>
-        {RESOURCES.map((r) => (
+        {resources.map((r) => (
           <Pressable
             key={r.label}
             style={styles.line}

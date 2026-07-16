@@ -1,7 +1,9 @@
 import { currentUser } from '@/server/auth/session';
+import { withUser } from '@/server/db';
 import { getEntitlement } from '@/server/entitlement';
 import { insertEntry, listEntries } from '@/server/journal/store';
 import { ingestEntry } from '@/server/profile/profile';
+import { RECOVERY_SCHOOL_IDS } from '@/server/bearing/schools';
 import type { JournalLogged } from '@/lib/data/types';
 
 // GET  /api/journal → the user's private log feed (free = last 30 days + upsell; Pro = all).
@@ -17,7 +19,18 @@ export async function GET(req: Request) {
 
   const ent = await getEntitlement(userId);
   const feed = await listEntries(userId, ent.premium);
-  return Response.json(feed);
+  // Surface recovery resources (SAMHSA) in the off-ramp for people following a recovery school.
+  const followsRecovery = await withUser(userId, async (c) =>
+    Boolean(
+      (
+        await c.query(
+          `select exists(select 1 from user_schools where user_id = current_app_user() and ideology = any($1::text[])) as f`,
+          [RECOVERY_SCHOOL_IDS],
+        )
+      ).rows[0]?.f,
+    ),
+  );
+  return Response.json({ ...feed, followsRecovery });
 }
 
 export async function POST(req: Request) {

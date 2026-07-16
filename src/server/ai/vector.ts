@@ -34,11 +34,13 @@ function diversify(rows: RetrievedTeaching[], limit: number, perSource = 2): Ret
   return out;
 }
 
-/** Retrieve grounding teachings for the coach, optionally scoped to one ideology. */
-export async function searchTeachings(query: string, ideology?: string, limit = 6): Promise<RetrievedTeaching[]> {
+/** Retrieve grounding teachings for the coach, optionally scoped to one ideology. When `queryVec`
+ *  is supplied (the reader's live struggle embedding), retrieval is biased to what is actually up
+ *  today instead of the rotation keywords; the text `query` still drives the keyword fallback. */
+export async function searchTeachings(query: string, ideology?: string, limit = 6, queryVec?: number[]): Promise<RetrievedTeaching[]> {
   if (vectorEnabled()) {
     try {
-      const vec = toVectorLiteral(await generateEmbedding(query, 'query'));
+      const vec = toVectorLiteral(queryVec ?? await generateEmbedding(query, 'query'));
       const p = pool();
       const fetchN = Math.max(limit * 4, 24);
       const raw = ideology

@@ -48,7 +48,7 @@ export async function POST(req: Request) {
         const subscriptionId = idOf(s.subscription);
         if (!userId) break;
 
-        if (md.plan === 'seat' || md.plan === 'org') {
+        if (md.plan === 'seat' || md.plan === 'org' || md.plan === 'facility') {
           // Fetch the live subscription so seats/status/period are right IMMEDIATELY —
           // seat gating must not wait for a customer.subscription.updated to land. A failed
           // retrieve 500s so Stripe REDELIVERS (idempotent upsert): persisting placeholder
@@ -68,21 +68,22 @@ export async function POST(req: Request) {
             }
           }
           const sub = (await p.query(
-            `insert into subscriptions (sponsor_id, provider, plan, status, seats, org_id, stripe_subscription_id, stripe_customer_id, current_period_end)
-             values ($1, 'stripe', $2, $3, coalesce($4, 0), $5, $6, $7, $8)
+            `insert into subscriptions (sponsor_id, provider, plan, status, seats, org_id, facility_id, stripe_subscription_id, stripe_customer_id, current_period_end)
+             values ($1, 'stripe', $2, $3, coalesce($4, 0), $5, $9, $6, $7, $8)
              on conflict (stripe_subscription_id) do update
                set status = excluded.status,
                    seats = coalesce($4, subscriptions.seats),
                    org_id = coalesce(excluded.org_id, subscriptions.org_id),
+                   facility_id = coalesce(excluded.facility_id, subscriptions.facility_id),
                    stripe_customer_id = excluded.stripe_customer_id,
                    current_period_end = coalesce(excluded.current_period_end, subscriptions.current_period_end)
              returning id, seats`,
-            [userId, md.plan === 'org' ? 'org' : 'team', status, seats, md.orgId ?? null, subscriptionId, customer, period],
+            [userId, md.plan === 'org' ? 'org' : 'team', status, seats, md.orgId ?? null, subscriptionId, customer, period, md.facilityId ?? null],
           )).rows[0];
           // The sponsor holds a seat too (their own tier: 'team' via has_seat, or 'org' via
-          // ownership). Capacity-guarded: if members already filled the pool (org_join runs
-          // concurrently), don't push assignments past the purchased count.
-          if (sub?.id) {
+          // ownership) — EXCEPT a facility admin, who funds client seats without consuming one
+          // (clients claim anonymously). Capacity-guarded against concurrent joins.
+          if (sub?.id && md.plan !== 'facility') {
             await p.query(
               `insert into seat_assignments (subscription_id, user_id)
                select $1, $2
@@ -105,7 +106,7 @@ export async function POST(req: Request) {
         const sub = event.data.object as Stripe.Subscription;
         const md = sub.metadata ?? {};
         const userId = md.userId;
-        if (md.plan === 'seat' || md.plan === 'org') {
+        if (md.plan === 'seat' || md.plan === 'org' || md.plan === 'facility') {
           const qty = md.plan === 'seat' ? 8 : (sub.items?.data?.[0]?.quantity ?? null);
           const updated = await p.query(
             `update subscriptions set status = $2, seats = coalesce($3, seats), current_period_end = $4 where stripe_subscription_id = $1`,
@@ -115,10 +116,10 @@ export async function POST(req: Request) {
           // Metadata carries everything needed to create the row now; completed then upserts.
           if (!updated.rowCount && userId) {
             await p.query(
-              `insert into subscriptions (sponsor_id, provider, plan, status, seats, org_id, stripe_subscription_id, current_period_end)
-               values ($1, 'stripe', $2, $3, coalesce($4, 0), $5, $6, $7)
+              `insert into subscriptions (sponsor_id, provider, plan, status, seats, org_id, facility_id, stripe_subscription_id, current_period_end)
+               values ($1, 'stripe', $2, $3, coalesce($4, 0), $5, $8, $6, $7)
                on conflict (stripe_subscription_id) do nothing`,
-              [userId, md.plan === 'org' ? 'org' : 'team', statusFromStripe(sub.status), qty, md.orgId ?? null, sub.id, periodEnd(sub)],
+              [userId, md.plan === 'org' ? 'org' : 'team', statusFromStripe(sub.status), qty, md.orgId ?? null, sub.id, periodEnd(sub), md.facilityId ?? null],
             );
           }
         } else if (userId) {
