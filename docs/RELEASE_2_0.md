@@ -41,11 +41,12 @@ upsell moment. Monitor and have copy ready.
 - [ ] **Device QA**: run `docs/RECOVERY_QA.md` on a real 2.0 build (recovery schools, picker ack,
       recovery mode, register, log off-ramp) plus the facility console + claim flow. This is the
       gating step the screens have not had.
-- [ ] **Commit + PR**: the work is uncommitted on `main`. Branch → PR → review → merge. Do not push
-      straight to `main` until the migrate step (Phase 1) is done, if merging auto-deploys.
+- [x] **Commit + PR**: release branch `agent/reisei-2.0`, commit `8581b4e`, draft PR #1. Production
+      database preparation completed before merge because `main` auto-deploys Vercel.
 - [x] **Snapshot prod DB** (Neon PITR branch `br-restless-forest-adlgegl5`, 2026-07-16 05:15 UTC)
       so you can restore if a migration surprises you.
-- [ ] **Stage the Stripe facility price** in test mode, then create the live price; capture its id.
+- [x] **Stage the Stripe facility price**: live product created at $4.99/seat/month and
+      $49.99/seat/year, with a five-seat checkout minimum.
 
 ## Phase 1 — Database (backward-compatible)
 
@@ -75,7 +76,7 @@ At this point the current live app is still running fine on the migrated schema.
 
 ## Phase 3 — Billing
 
-- [ ] Add `STRIPE_PRICE_FACILITY_MONTHLY` / `STRIPE_PRICE_FACILITY_ANNUAL` to prod env; redeploy if
+- [x] Add `STRIPE_PRICE_FACILITY_MONTHLY` / `STRIPE_PRICE_FACILITY_ANNUAL` to prod env; redeploy if
       the platform needs it to pick them up.
 - [ ] End-to-end facility checkout in Stripe (test → live): buy seats → webhook writes a subscription
       with `facility_id` → generate a code → claim it on a second account → that account is `team`

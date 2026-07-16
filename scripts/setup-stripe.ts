@@ -17,6 +17,7 @@ import Stripe from 'stripe';
 //   Pro  — $12.99/mo · $99/yr               (subscriber plus two covered people)
 //   Crew — $24.99/mo · $199/yr              (flat plan for up to eight, web only)
 //   Org  — $3.99/seat/mo · $39.99/seat/yr   (organization, 9+ seats, multi-Corner, web only)
+//   Facility — $4.99/seat/mo · $49.99/seat/yr (sponsored Pro, 5+ seats, web only)
 
 const CURRENCY = process.env.REISEI_CURRENCY || 'usd';
 const WEBHOOK_URL = process.env.STRIPE_WEBHOOK_URL || 'https://www.reiseiapp.com/api/webhooks/stripe';
@@ -26,7 +27,7 @@ const WEBHOOK_EVENTS: Stripe.WebhookEndpointCreateParams.EnabledEvent[] = [
   'customer.subscription.deleted',
 ];
 
-type ProductKey = 'pro' | 'seat' | 'org';
+type ProductKey = 'pro' | 'seat' | 'org' | 'facility';
 
 interface PriceSpec {
   envKey: string; // the .env var to write
@@ -41,6 +42,7 @@ const PRODUCTS: Record<ProductKey, { name: string; description: string }> = {
   pro: { name: 'Reisei Pro', description: 'One private Crew for three people, Line Cycles, full history, every school, and the full Log.' },
   seat: { name: 'Reisei Crew', description: 'One private Crew with full member access for up to eight people.' },
   org: { name: 'Reisei Org Seat', description: 'An organization seat (9+, volume pricing) for one covered member.' },
+  facility: { name: 'Reisei Facility Seat', description: 'A facility-sponsored private Pro seat for one person, billed in pools of five or more.' },
 };
 
 const PRICES: PriceSpec[] = [
@@ -50,6 +52,8 @@ const PRICES: PriceSpec[] = [
   { envKey: 'STRIPE_PRICE_SEAT_ANNUAL', tag: 'crew_annual_v15', product: 'seat', amount: 19900, interval: 'year', nickname: 'Reisei Crew 1.5 Annual' },
   { envKey: 'STRIPE_PRICE_ORG_MONTHLY', tag: 'org_monthly', product: 'org', amount: 399, interval: 'month', nickname: 'Reisei Org Seat — Monthly' },
   { envKey: 'STRIPE_PRICE_ORG_ANNUAL', tag: 'org_annual', product: 'org', amount: 3999, interval: 'year', nickname: 'Reisei Org Seat — Annual' },
+  { envKey: 'STRIPE_PRICE_FACILITY_MONTHLY', tag: 'facility_monthly_v20', product: 'facility', amount: 499, interval: 'month', nickname: 'Reisei Facility Seat Monthly' },
+  { envKey: 'STRIPE_PRICE_FACILITY_ANNUAL', tag: 'facility_annual_v20', product: 'facility', amount: 4999, interval: 'year', nickname: 'Reisei Facility Seat Annual' },
 ];
 
 function money(cents: number): string {
@@ -153,6 +157,7 @@ async function main() {
     pro: await ensureProduct(stripe, 'pro'),
     seat: await ensureProduct(stripe, 'seat'),
     org: await ensureProduct(stripe, 'org'),
+    facility: await ensureProduct(stripe, 'facility'),
   };
 
   const envValues: Record<string, string> = {};

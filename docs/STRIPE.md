@@ -20,7 +20,7 @@ EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_…
 npm run setup:stripe
 ```
 
-Idempotently creates two products and four prices, then writes the ids into `.env.local`:
+Idempotently creates four products and eight prices, then writes the ids into `.env.local`:
 
 | Env var | Plan | Price |
 |---|---|---|
@@ -28,9 +28,14 @@ Idempotently creates two products and four prices, then writes the ids into `.en
 | `STRIPE_PRICE_PRO_ANNUAL` | Reisei Pro | $99 / yr |
 | `STRIPE_PRICE_SEAT_MONTHLY` | Reisei Crew | $24.99 / mo |
 | `STRIPE_PRICE_SEAT_ANNUAL` | Reisei Crew | $199 / yr |
+| `STRIPE_PRICE_ORG_MONTHLY` | Reisei Organization seat | $3.99 / seat / mo |
+| `STRIPE_PRICE_ORG_ANNUAL` | Reisei Organization seat | $39.99 / seat / yr |
+| `STRIPE_PRICE_FACILITY_MONTHLY` | Reisei Facility seat | $4.99 / seat / mo |
+| `STRIPE_PRICE_FACILITY_ANNUAL` | Reisei Facility seat | $49.99 / seat / yr |
 
 Pro carries a **7-day free trial** (applied at Checkout in `billing/checkout+api.ts`).
-Team seats bill by `quantity` (min 3 seats), no trial.
+Crew seats bill by `quantity` (min 3 seats), organization seats start at 9, and facility-sponsored
+seats start at 5. The seat plans do not include a trial.
 
 ## 3. Webhook → `STRIPE_WEBHOOK_SECRET`
 
