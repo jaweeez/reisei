@@ -15,6 +15,13 @@ export type Ideology =
   | 'islam'
   | 'epicureanism'
   | 'existentialism'
+  // Recovery family (docs/RECOVERY_EXPANSION.md). No public-domain daily text: Reisei uses its
+  // own wording and links out to the official source. AA and NA are separate schools.
+  | 'smart-recovery'
+  | 'recovery-dharma'
+  | 'aa'
+  | 'na'
+  | 'secular-recovery'
   | 'mindfulness';
 
 /** A single curated teaching — always-on (keyword fallback) and embedded for vector search. */
@@ -63,6 +70,11 @@ export const IDEOLOGY_LABEL: Record<Ideology, string> = {
   islam: 'Islam',
   epicureanism: 'Epicureanism',
   existentialism: 'Existentialism',
+  'smart-recovery': 'SMART Recovery',
+  'recovery-dharma': 'Recovery Dharma',
+  aa: 'AA',
+  na: 'NA',
+  'secular-recovery': 'Secular Recovery',
   mindfulness: 'Mindfulness',
 };
 
@@ -79,5 +91,24 @@ export const IDEOLOGY_BLURB: Record<Ideology, string> = {
   islam: 'Patience, gratitude, steady effort — then trust the outcome.',
   epicureanism: "Want less. Choose the pleasures that don't cost you tomorrow.",
   existentialism: 'No script is coming. Choose, and own the choice.',
+  'smart-recovery': 'Motivation, urges, thoughts, balance. Practical tools, no higher power required.',
+  'recovery-dharma': 'Meet the craving with attention. Investigate it, do not obey it.',
+  aa: 'One day at a time. Honesty and humility, and help you do not carry alone.',
+  na: 'Just for today, stay clean. You are not the only one, and not on your own.',
+  'secular-recovery': 'Name the urge, ride it out, tell the truth. Your own reasons, your own plan.',
   mindfulness: 'Return to the present. Watch the thought pass without chasing it.',
 };
+
+/** The families the selectable schools group under in the Bearing picker (docs/RECOVERY_EXPANSION.md).
+ *  Derived statically from the school id, never stored per user. CBT and ACT live under Recovery. */
+export type SchoolFamily = 'philosophy' | 'spirituality' | 'recovery';
+
+/** Family header shown above each group of schools in the picker. */
+export const FAMILY_LABEL: Record<SchoolFamily, string> = {
+  philosophy: 'Philosophy',
+  spirituality: 'Religion & Spirituality',
+  recovery: 'Recovery',
+};
+
+/** Display order of the families in the picker (Recovery last for the discipline-first default). */
+export const FAMILY_ORDER: SchoolFamily[] = ['philosophy', 'spirituality', 'recovery'];

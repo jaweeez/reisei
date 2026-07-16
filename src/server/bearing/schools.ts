@@ -1,4 +1,4 @@
-import { IDEOLOGY_BLURB, IDEOLOGY_LABEL, type Ideology } from '@/data/corpus/types';
+import { IDEOLOGY_BLURB, IDEOLOGY_LABEL, type Ideology, type SchoolFamily } from '@/data/corpus/types';
 import type { BearingSource } from '@/lib/data/types';
 
 // The selectable schools for The Bearing — the on-brand analog to Enso's `practices.ts`
@@ -12,6 +12,8 @@ import type { BearingSource } from '@/lib/data/types';
 
 export interface BearingSchool {
   ideology: Ideology;
+  /** The picker family this school groups under (docs/RECOVERY_EXPANSION.md). */
+  family: SchoolFamily;
   label: string;
   blurb: string;
   /** Canonical link-out + attribution — used when a retrieved chunk carries no url. */
@@ -36,82 +38,135 @@ export interface BearingQuote {
 
 const OWN = "The principle is Reisei's own wording; the link opens the source.";
 const NOT_AFFILIATED = 'Reisei is not affiliated with this tradition.';
+// Recovery schools carry a stronger note: Reisei sits alongside real help, it does not replace it.
+const NOT_TREATMENT = 'Reisei is not treatment, a sponsor, or a meeting.';
 
-function school(ideology: Ideology, source: BearingSource, copyright: string, themes: string[]): BearingSchool {
-  return { ideology, label: IDEOLOGY_LABEL[ideology], blurb: IDEOLOGY_BLURB[ideology], source, copyright, themes };
+function school(ideology: Ideology, family: SchoolFamily, source: BearingSource, copyright: string, themes: string[]): BearingSchool {
+  return { ideology, family, label: IDEOLOGY_LABEL[ideology], blurb: IDEOLOGY_BLURB[ideology], source, copyright, themes };
 }
 
 export const SCHOOLS: BearingSchool[] = [
   school(
     'stoicism',
+    'philosophy',
     { url: 'https://classics.mit.edu/Antoninus/meditations.html', title: 'Meditations — Marcus Aurelius', attribution: 'Marcus Aurelius, Meditations (trans. Long, public domain)' },
     `Public-domain classical texts. ${OWN}`,
     ['control', 'adversity', 'discipline', 'impermanence', 'present', 'duty'],
   ),
   school(
     'modern-stoicism',
+    'philosophy',
     { url: 'https://modernstoicism.com/', title: 'Modern Stoicism', attribution: 'Modern Stoicism (modernstoicism.com)' },
     `Grounded in public-domain Stoic texts, applied for now. ${OWN}`,
     ['control', 'habits', 'reframing', 'adversity', 'values', 'present'],
   ),
   school(
     'cbt',
+    'recovery',
     { url: 'https://www.nhs.uk/mental-health/talking-therapies-medicine-treatments/talking-therapies-and-counselling/cognitive-behavioural-therapy-cbt/', title: 'Cognitive behavioural therapy (CBT) — NHS', attribution: 'NHS — Cognitive behavioural therapy (CBT)' },
     `Reisei's own summaries of CBT skills; the link opens a clinical explainer.`,
     ['reframing', 'distortions', 'evidence', 'action', 'exposure', 'thoughts'],
   ),
   school(
     'act',
+    'recovery',
     { url: 'https://contextualscience.org/act', title: 'Acceptance & Commitment Therapy — ACBS', attribution: 'Association for Contextual Behavioral Science (ACBS)' },
     `Reisei's own summaries of ACT processes; the link opens the ACBS resource.`,
     ['defusion', 'acceptance', 'values', 'action', 'present', 'self'],
   ),
   school(
     'buddhism',
+    'spirituality',
     { url: 'https://suttacentral.net/dhp', title: 'The Dhammapada — SuttaCentral', attribution: 'Dhammapada, trans. Bhikkhu Sujato (CC0 / public domain)' },
     `Public-domain (CC0) translations via SuttaCentral. ${OWN} ${NOT_AFFILIATED}`,
     ['impermanence', 'attachment', 'intention', 'equanimity', 'present', 'compassion'],
   ),
   school(
     'daoism',
+    'spirituality',
     { url: 'https://ctext.org/dao-de-jing', title: 'Tao Te Ching — trans. James Legge', attribution: 'Laozi, Tao Te Ching (trans. Legge, 1891, public domain)' },
     `Public-domain 1891 translation. ${OWN} ${NOT_AFFILIATED}`,
     ['wu wei', 'simplicity', 'yielding', 'balance', 'humility', 'present'],
   ),
   school(
     'hinduism',
+    'spirituality',
     { url: 'https://sacred-texts.com/hin/gita/', title: 'Bhagavad Gita — sacred-texts.com', attribution: 'Bhagavad Gita (public-domain translation, sacred-texts.com)' },
     `Public-domain translation. ${OWN} ${NOT_AFFILIATED}`,
     ['duty', 'detachment', 'discipline', 'equanimity', 'action', 'self-mastery'],
   ),
   school(
     'christianity',
+    'spirituality',
     { url: 'https://ebible.org/web/', title: 'World English Bible', attribution: 'World English Bible (public domain)' },
     `Public-domain translation (WEB). ${OWN} ${NOT_AFFILIATED}`,
     ['perseverance', 'humility', 'forgiveness', 'gratitude', 'service', 'faith'],
   ),
   school(
     'islam',
+    'spirituality',
     { url: 'https://quran.com/', title: "The Qur'an — Quran.com", attribution: "The Qur'an (Quran.com)" },
     `Reisei's own wording of shared ethical principles; the link opens the source text. ${NOT_AFFILIATED}`,
     ['patience', 'gratitude', 'reliance', 'excellence', 'intention', 'discipline'],
   ),
   school(
     'epicureanism',
+    'philosophy',
     { url: 'https://epicurus.net/en/principal.html', title: 'Principal Doctrines — Epicurus', attribution: 'Epicurus, Principal Doctrines (public domain)' },
     `Public-domain classical texts. ${OWN}`,
     ['desire', 'tranquility', 'friendship', 'fear', 'simplicity', 'present'],
   ),
   school(
     'existentialism',
+    'philosophy',
     { url: 'https://plato.stanford.edu/entries/existentialism/', title: 'Existentialism — Stanford Encyclopedia of Philosophy', attribution: 'Stanford Encyclopedia of Philosophy' },
     `Grounded in public-domain primary texts; the link opens a scholarly overview. ${OWN}`,
     ['freedom', 'responsibility', 'authenticity', 'meaning', 'choice', 'absurdity'],
+  ),
+  // Recovery family. No public-domain daily text (unlike the schools above), so these carry NO
+  // curated verbatim quote: the Bearing is Reisei's own recovery-voiced read, grounded in the
+  // curated recovery teachings, with a link out to the official source. See RECOVERY_EXPANSION.md.
+  school(
+    'smart-recovery',
+    'recovery',
+    { url: 'https://smartrecovery.org/', title: 'SMART Recovery', attribution: 'SMART Recovery (smartrecovery.org)' },
+    `Reisei's own wording of SMART Recovery's tools; the link opens the official site. Reisei is not affiliated with SMART Recovery. ${NOT_TREATMENT}`,
+    ['urges', 'motivation', 'thoughts', 'balance', 'triggers', 'honesty'],
+  ),
+  school(
+    'recovery-dharma',
+    'recovery',
+    { url: 'https://recoverydharma.org/', title: 'Recovery Dharma', attribution: 'Recovery Dharma (recoverydharma.org)' },
+    `Reisei's own wording of a Buddhist-inspired recovery path; the link opens Recovery Dharma. Reisei is not affiliated. ${NOT_TREATMENT}`,
+    ['craving', 'impermanence', 'investigation', 'compassion', 'refuge', 'present'],
+  ),
+  school(
+    'aa',
+    'recovery',
+    { url: 'https://www.aa.org/', title: 'Alcoholics Anonymous', attribution: 'Alcoholics Anonymous (aa.org)' },
+    `Reisei's own wording of widely shared Twelve Step principles; the link opens aa.org. Reisei is not affiliated with Alcoholics Anonymous. ${NOT_TREATMENT}`,
+    ['powerlessness', 'one day at a time', 'honesty', 'amends', 'humility', 'service'],
+  ),
+  school(
+    'na',
+    'recovery',
+    { url: 'https://na.org/', title: 'Narcotics Anonymous', attribution: 'Narcotics Anonymous (na.org)' },
+    `Reisei's own wording of widely shared Twelve Step principles; the link opens na.org. Reisei is not affiliated with Narcotics Anonymous. ${NOT_TREATMENT}`,
+    ['just for today', 'staying clean', 'surrender', 'connection', 'honesty', 'gratitude'],
+  ),
+  school(
+    'secular-recovery',
+    'recovery',
+    { url: 'https://www.samhsa.gov/find-help/national-helpline', title: 'SAMHSA National Helpline', attribution: 'SAMHSA (samhsa.gov)' },
+    `Reisei's own framing of secular recovery skills; the link opens the SAMHSA national helpline. ${NOT_TREATMENT}`,
+    ['urges', 'triggers', 'honesty', 'play it forward', 'routine', 'reasons'],
   ),
 ];
 
 export const SCHOOL_BY_ID: Record<string, BearingSchool> = Object.fromEntries(SCHOOLS.map((s) => [s.ideology, s]));
 export const SCHOOL_IDS: Ideology[] = SCHOOLS.map((s) => s.ideology);
+/** The recovery-family school ids — used to surface recovery resources where a follower would want them. */
+export const RECOVERY_SCHOOL_IDS: Ideology[] = SCHOOLS.filter((s) => s.family === 'recovery').map((s) => s.ideology);
 
 export function isSchoolId(x: unknown): x is Ideology {
   return typeof x === 'string' && Object.prototype.hasOwnProperty.call(SCHOOL_BY_ID, x);
@@ -250,6 +305,9 @@ export const DAILY_STATES: string[] = [
   'on edge, wound tight',
   'fear about what is coming',
   'lonely and disconnected',
+  'a craving that keeps circling back',
+  'white-knuckling an urge',
+  'romanticizing the thing you left behind',
 ];
 
 /** The felt state to aim today's bearing at. Rotates by date, offset from the theme so the

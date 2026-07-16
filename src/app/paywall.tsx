@@ -17,7 +17,8 @@ const PRO_FEATURES = [
   'Full Pro for you and two invited people',
   'One private Crew with weekly reviews',
   '14-day Line Reviews and Cycle Reports',
-  'Full Ledger, Log, and personalized Bearings',
+  'Every tradition, unlimited: philosophy, faith, and recovery',
+  'Bearings tailored to your log, plus full Ledger and Log history',
   'No ads and no sale of personal data',
 ];
 

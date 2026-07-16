@@ -25,13 +25,14 @@ export async function POST(req: Request) {
   const userId = await currentUser(req);
   if (!userId) return Response.json({ error: 'unauthenticated' }, { status: 401 });
 
-  let b: { plan?: unknown; interval?: unknown; seats?: unknown; orgId?: unknown };
+  let b: { plan?: unknown; interval?: unknown; seats?: unknown; orgId?: unknown; facilityId?: unknown };
   try {
     b = await req.json();
   } catch {
     return Response.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const plan: PlanKey = b.plan === 'seat' ? 'seat' : b.plan === 'org' ? 'org' : 'pro';
+  const plan: PlanKey =
+    b.plan === 'seat' ? 'seat' : b.plan === 'org' ? 'org' : b.plan === 'facility' ? 'facility' : 'pro';
   const interval = parseInterval(b.interval);
   const seats = clampSeats(plan, Number(b.seats));
 
@@ -70,6 +71,26 @@ export async function POST(req: Request) {
     }
   }
 
+  // Facility checkout binds to a facility the caller admins, and only one live plan per facility.
+  let facilityId: string | null = null;
+  if (plan === 'facility') {
+    facilityId = typeof b.facilityId === 'string' ? b.facilityId : '';
+    if (!facilityId) return Response.json({ error: 'Missing facilityId.' }, { status: 400 });
+    const owns = (
+      await adminPool().query(`select 1 from facilities where id = $1 and admin_user_id = $2`, [facilityId, userId])
+    ).rowCount;
+    if (!owns) return Response.json({ error: 'That is not your facility.' }, { status: 403 });
+    const live = (
+      await adminPool().query(
+        `select 1 from subscriptions where facility_id = $1 and status in ('active','trialing')`,
+        [facilityId],
+      )
+    ).rowCount;
+    if (live) {
+      return Response.json({ error: 'This facility already has a plan. Manage it in billing.' }, { status: 409 });
+    }
+  }
+
   const ref = priceRef(plan, interval);
   if (!ref) return Response.json({ error: `No ${plan} price configured for ${interval}.` }, { status: 501 });
 
@@ -89,7 +110,7 @@ export async function POST(req: Request) {
   const priceId = await resolvePrice(ref);
   // Premium posture: 7-day free trial on individual Pro. Seat plans (B2B) get none.
   const trialDays = plan === 'pro' ? 7 : undefined;
-  const metadata: Record<string, string> = { userId, plan, ...(orgId ? { orgId } : {}) };
+  const metadata: Record<string, string> = { userId, plan, ...(orgId ? { orgId } : {}), ...(facilityId ? { facilityId } : {}) };
   const session = await stripe().checkout.sessions.create({
     mode: 'subscription',
     customer: customerId,
@@ -100,12 +121,19 @@ export async function POST(req: Request) {
         // Let an org adjust its headcount right in Checkout; the plan floor holds.
         ...(plan === 'org'
           ? { adjustable_quantity: { enabled: true, minimum: SEAT_RULES.org.min, maximum: SEAT_RULES.org.max } }
-          : {}),
+          : plan === 'facility'
+            ? { adjustable_quantity: { enabled: true, minimum: SEAT_RULES.facility.min, maximum: SEAT_RULES.facility.max } }
+            : {}),
       },
     ],
     subscription_data: { metadata, ...(trialDays ? { trial_period_days: trialDays } : {}) },
     metadata,
-    success_url: plan === 'org' ? `${origin}/org?checkout=success` : `${origin}/settings?checkout=success`,
+    success_url:
+      plan === 'org'
+        ? `${origin}/org?checkout=success`
+        : plan === 'facility'
+          ? `${origin}/facility?checkout=success`
+          : `${origin}/settings?checkout=success`,
     cancel_url: `${origin}/paywall?checkout=cancel`,
     allow_promotion_codes: true,
   });

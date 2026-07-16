@@ -1,6 +1,7 @@
 /// <reference types="jest" />
 import type { RetrievedTeaching } from '@/server/ai/vector';
 import { DAILY_STATES, getSchool, isSchoolId, quoteForToday, SCHOOL_IDS, SCHOOLS, stateForToday, themeForToday } from './schools';
+import { FAMILY_ORDER } from '@/data/corpus/types';
 import { BEARING_SYSTEM, buildBearingPrompt, deDash, parseBearingText, pickSource, splitTeachingContent } from './compose';
 
 const chunk = (over: Partial<RetrievedTeaching> = {}): RetrievedTeaching => ({
@@ -11,14 +12,26 @@ const REQUESTED = [
   'stoicism', 'modern-stoicism', 'cbt', 'act', 'buddhism', 'daoism',
   'hinduism', 'christianity', 'islam', 'epicureanism', 'existentialism',
 ];
+const RECOVERY = ['smart-recovery', 'recovery-dharma', 'aa', 'na', 'secular-recovery'];
 
 describe('SCHOOLS catalog', () => {
-  it('has the 11 selectable schools the user asked for and excludes mindfulness', () => {
-    expect(SCHOOLS).toHaveLength(11);
+  it('has the 16 selectable schools (11 original + 5 recovery) and excludes mindfulness', () => {
+    expect(SCHOOLS).toHaveLength(16);
     expect(SCHOOL_IDS).not.toContain('mindfulness');
-    for (const id of REQUESTED) {
+    for (const id of [...REQUESTED, ...RECOVERY]) {
       expect(isSchoolId(id)).toBe(true);
       expect(getSchool(id)).toBeDefined();
+    }
+  });
+
+  it('recovery schools carry a not-treatment note, no verbatim quote, and an https source', () => {
+    for (const id of RECOVERY) {
+      const s = getSchool(id)!;
+      expect(s.family).toBe('recovery');
+      expect(s.copyright.toLowerCase()).toContain('not treatment');
+      expect(s.source.url).toMatch(/^https:\/\//);
+      // Recovery schools have no public-domain text, so no verbatim anchor quote is shown.
+      expect(quoteForToday(s, '2026-07-08')).toBeNull();
     }
   });
 
@@ -31,7 +44,15 @@ describe('SCHOOLS catalog', () => {
       expect(s.source.attribution.length).toBeGreaterThan(0);
       expect(s.copyright.length).toBeGreaterThan(0);
       expect(s.themes.length).toBeGreaterThanOrEqual(1);
+      expect(FAMILY_ORDER).toContain(s.family);
     }
+  });
+
+  it('groups CBT and ACT under Recovery, and the classical schools under Philosophy', () => {
+    expect(getSchool('cbt')!.family).toBe('recovery');
+    expect(getSchool('act')!.family).toBe('recovery');
+    expect(getSchool('stoicism')!.family).toBe('philosophy');
+    expect(getSchool('christianity')!.family).toBe('spirituality');
   });
 
   it('isSchoolId rejects unknown and non-string input', () => {
@@ -78,8 +99,8 @@ describe('stateForToday', () => {
 });
 
 describe('school quotes', () => {
-  it('every school has a verified quote today: non-empty text + ref, and an https url', () => {
-    for (const s of SCHOOLS) {
+  it('every non-recovery school has a verified quote today: non-empty text + ref, and an https url', () => {
+    for (const s of SCHOOLS.filter((x) => x.family !== 'recovery')) {
       const q = quoteForToday(s, '2026-07-08');
       expect(q).not.toBeNull();
       expect(q!.text.length).toBeGreaterThan(0);
@@ -100,7 +121,7 @@ describe('school quotes', () => {
   });
 
   it('never repeats a date-rotated quote on consecutive days', () => {
-    for (const school of SCHOOLS) {
+    for (const school of SCHOOLS.filter((x) => x.family !== 'recovery')) {
       for (let day = 1; day < 28; day += 1) {
         const date = `2026-07-${String(day).padStart(2, '0')}`;
         const next = `2026-07-${String(day + 1).padStart(2, '0')}`;

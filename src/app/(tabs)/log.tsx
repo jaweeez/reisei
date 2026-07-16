@@ -65,7 +65,7 @@ export default function Log() {
         <Button label="Log it" onPress={onLog} loading={busy} disabled={!body.trim()} />
       </HeroPanel>
 
-      {offramp && <CrisisCard alert />}
+      {offramp && <CrisisCard alert recovery={feed?.followsRecovery} />}
 
       <Section label="Past entries">
       <View style={styles.list}>
@@ -90,7 +90,7 @@ export default function Log() {
       </View>
       </Section>
 
-      {!offramp && <CrisisCard />}
+      {!offramp && <CrisisCard recovery={feed?.followsRecovery} />}
     </Screen>
   );
 }

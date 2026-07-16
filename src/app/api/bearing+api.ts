@@ -15,19 +15,27 @@ export async function GET(req: Request) {
   const userId = await currentUser(req);
   if (!userId) return Response.json({ error: 'unauthenticated' }, { status: 401 });
 
-  const { tz, followed } = await withUser(userId, async (c) => {
+  const { tz, followed, recoveryAck } = await withUser(userId, async (c) => {
     const t = (await c.query(`select tz from users where id = current_app_user()`)).rows[0]?.tz ?? 'UTC';
     const rows = (await c.query(`select ideology from user_schools where user_id = current_app_user() order by sort, created_at`)).rows;
-    return { tz: t as string, followed: rows.map((r) => r.ideology as string) };
+    const ack = (await c.query(
+      `select recovery_terms_acknowledged_at is not null as ack from accountability_profiles where user_id = current_app_user()`,
+    )).rows[0]?.ack ?? false;
+    return { tz: t as string, followed: rows.map((r) => r.ideology as string), recoveryAck: ack as boolean };
   });
 
   const localDate = localDateFor(tz);
   const followedSet = new Set(followed);
 
-  // Resolve each followed school's Bearing for this user (per-user when a struggle is live,
-  // else a copy of the shared neutral bearing). Cached in user_bearings after the first resolve.
-  const stored = await Promise.all(followed.map((id) => resolveUserBearing(userId, id, localDate).catch(() => null)));
-  const bearings = stored.filter((b): b is NonNullable<typeof b> => b !== null);
+  // Resolve each followed school's Bearing for this user (per-user when a struggle is live, else a
+  // copy of the shared neutral bearing). SEQUENTIAL on purpose: the no-repeat check compares each
+  // new read against the reader's already-stored reads, including the ones resolved earlier in this
+  // same pass, so two schools never yield near-identical reads today (RECOVERY_EXPANSION.md).
+  const bearings: NonNullable<Awaited<ReturnType<typeof resolveUserBearing>>>[] = [];
+  for (const id of followed) {
+    const b = await resolveUserBearing(userId, id, localDate).catch(() => null);
+    if (b) bearings.push(b);
+  }
 
   const loggedIds = await withUser(userId, async (c) => {
     const rows = (await c.query(
@@ -55,12 +63,13 @@ export async function GET(req: Request) {
 
   const schools: SchoolView[] = SCHOOLS.map((s) => ({
     ideology: s.ideology,
+    family: s.family,
     label: s.label,
     blurb: s.blurb,
     followed: followedSet.has(s.ideology),
   }));
 
-  const body: BearingResponse = { localDate, schools, today };
+  const body: BearingResponse = { localDate, schools, today, recoveryAck };
   return Response.json(body);
 }
 

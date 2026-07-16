@@ -4,6 +4,7 @@ import type {
   EarlyChangeReason,
   BearingHistory,
   BearingResponse,
+  FacilityOverview,
   HomeState,
   JournalFeed,
   JournalLogged,
@@ -13,6 +14,7 @@ import type {
   OrgJoined,
   OrgView,
   RecoveryFriction,
+  RecoveryModeSnapshot,
   RecoveryPlan,
   ReachOutPreference,
   SchoolView,
@@ -53,6 +55,51 @@ export async function planRecovery(
   return res.data;
 }
 
+/** Facility admin: the caller's facility overview (anonymous seat counts + codes). */
+export async function fetchFacility(): Promise<FacilityOverview | null> {
+  const res = await api<FacilityOverview>('/api/facility');
+  return res.ok ? res.data : null;
+}
+
+/** Run a facility admin op (create | code | revoke); returns the updated overview. */
+export async function facilityOp(body: Record<string, unknown>): Promise<FacilityOverview | null> {
+  const res = await api<FacilityOverview>('/api/facility', { method: 'POST', body: JSON.stringify(body) });
+  return res.ok ? res.data : null;
+}
+
+/** Redeem a facility code to claim a sponsored Pro seat, anonymously. */
+export async function claimFacilitySeat(code: string): Promise<{ ok?: boolean; error?: string }> {
+  const res = await api<{ ok?: boolean; error?: string }>('/api/facility/claim', {
+    method: 'POST',
+    body: JSON.stringify({ code }),
+  });
+  return res.data;
+}
+
+/** The user's voice register ('default' | 'neutral'), honored by generated copy. */
+export async function fetchAddressRegister(): Promise<string> {
+  const res = await api<{ addressRegister: string }>('/api/profile');
+  return res.ok ? res.data.addressRegister : 'default';
+}
+
+/** Set the voice register. Returns true on success. */
+export async function setAddressRegister(addressRegister: string): Promise<boolean> {
+  const res = await api<{ addressRegister: string }>('/api/profile', { method: 'POST', body: JSON.stringify({ addressRegister }) });
+  return res.ok;
+}
+
+/** Opt-in Recovery mode: the sober-time / chapters layer (separate from the honest-break plan). */
+export async function fetchRecoveryMode(): Promise<RecoveryModeSnapshot | null> {
+  const res = await api<RecoveryModeSnapshot>('/api/recovery-mode');
+  return res.ok ? res.data : null;
+}
+
+/** Run a Recovery-mode op (setup | preferences | begin_again | disable); returns the new snapshot. */
+export async function updateRecoveryMode(body: Record<string, unknown>): Promise<RecoveryModeSnapshot | null> {
+  const res = await api<RecoveryModeSnapshot>('/api/recovery-mode', { method: 'POST', body: JSON.stringify(body) });
+  return res.ok ? res.data : null;
+}
+
 export async function createLine(
   statement: string,
   kind: LineKind = 'abstain',
@@ -84,12 +131,19 @@ export async function reviewLine(input: {
 export async function updateAccountability(input: {
   honestyAccepted?: boolean;
   reachOutPreference?: ReachOutPreference;
-}): Promise<{ honestyAcknowledged?: boolean; reachOutPreference?: ReachOutPreference; error?: string }> {
-  const res = await api<{ honestyAcknowledged?: boolean; reachOutPreference?: ReachOutPreference; error?: string }>(
+  recoveryTermsAccepted?: boolean;
+}): Promise<{ honestyAcknowledged?: boolean; reachOutPreference?: ReachOutPreference; recoveryTermsAcknowledged?: boolean; error?: string }> {
+  const res = await api<{ honestyAcknowledged?: boolean; reachOutPreference?: ReachOutPreference; recoveryTermsAcknowledged?: boolean; error?: string }>(
     '/api/accountability',
     { method: 'POST', body: JSON.stringify(input) },
   );
   return res.data;
+}
+
+/** Record the one-time not-treatment acknowledgment (shown when following a first Recovery school). */
+export async function acknowledgeRecoveryTerms(): Promise<boolean> {
+  const res = await updateAccountability({ recoveryTermsAccepted: true });
+  return res.recoveryTermsAcknowledged === true;
 }
 
 export async function retireLine(id: string): Promise<boolean> {

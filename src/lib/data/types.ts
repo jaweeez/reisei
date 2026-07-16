@@ -107,6 +107,46 @@ export interface RecoveryPlan {
   move: string;
 }
 
+/** A facility claim code (FACILITY_SPONSORSHIP.md). Anonymous; the facility never sees who claims. */
+export interface FacilityInviteView {
+  code: string;
+  revoked: boolean;
+}
+
+/** Facility admin overview — seat counts only, never client identities. */
+export interface FacilityOverview {
+  facility: { id: string; name: string; billingMode: string } | null;
+  seats?: { total: number; claimed: number };
+  active?: boolean;
+  codes?: FacilityInviteView[];
+}
+
+/** One sober/clean chapter (RECOVERY_EXPANSION.md). `endedOn` null means it is the current one. */
+export interface RecoveryChapter {
+  startedOn: string;
+  endedOn: string | null;
+}
+
+/** Opt-in Recovery mode snapshot (GET/POST /api/recovery-mode). Owner-private. */
+export interface RecoveryModeSnapshot {
+  enabled: boolean;
+  today: string;
+  mode?: 'chapter' | 'practice';
+  startedOn?: string | null;
+  showCount?: boolean;
+  whatFrom?: string | null;
+  hasSponsor?: boolean;
+  /** A private, off-Crew sponsor contact (name + how to reach them). */
+  sponsorName?: string | null;
+  sponsorContact?: string | null;
+  /** Days in the current chapter (chapter mode only), else null. */
+  days?: number | null;
+  /** The highest milestone reached ("30 days", "1 year", ...), or null. */
+  milestone?: string | null;
+  isMilestoneToday?: boolean;
+  chapters: RecoveryChapter[];
+}
+
 /** The one standard the user holds. */
 export interface LineView {
   id: string;
@@ -203,6 +243,8 @@ export interface BearingSource {
 /** One selectable school (the analog to Enso's pathways). */
 export interface SchoolView {
   ideology: string;
+  /** The picker family this school groups under: 'philosophy' | 'spirituality' | 'recovery'. */
+  family: string;
   label: string;
   blurb: string;
   followed: boolean;
@@ -242,6 +284,8 @@ export interface BearingResponse {
   localDate: string;
   schools: SchoolView[];
   today: BearingView[];
+  /** Whether the user has acknowledged the recovery not-treatment terms (gates the picker once). */
+  recoveryAck: boolean;
 }
 
 /** One past entry in the user's private log. */
@@ -273,6 +317,8 @@ export interface JournalEntry {
 export interface JournalFeed {
   entries: JournalEntry[];
   upsell: boolean;
+  /** True when the user follows a recovery school, so the off-ramp includes recovery resources. */
+  followsRecovery?: boolean;
 }
 
 /** POST /api/journal result. `offramp` is true when the entry read like a genuinely hard
